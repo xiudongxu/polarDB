@@ -96,6 +96,7 @@ public class Data {
             offsetBuffer.flip();
             offsetFileChannel.write(offsetBuffer);
             offsetBuffer.clear();
+            offsetFileChannel = offsetFileChannel.position(0);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "write offset IO exception!!!");
         }
