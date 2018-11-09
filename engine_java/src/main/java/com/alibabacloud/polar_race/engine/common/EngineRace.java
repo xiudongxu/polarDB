@@ -56,13 +56,11 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public byte[] read(byte[] key) throws EngineException {
-
         long keyL = ByteUtil.bytes2Long(key);
         int offset = index.get(keyL);
         if (offset == 0) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "not found the value");
         }
-
         return data.getValueFromDataFile(offset);
     }
 
