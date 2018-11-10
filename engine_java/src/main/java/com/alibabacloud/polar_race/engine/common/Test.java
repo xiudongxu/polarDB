@@ -1,9 +1,6 @@
 package com.alibabacloud.polar_race.engine.common;
 
-import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * @author dongxu.xiu
@@ -13,13 +10,14 @@ public class Test {
 
     private static EngineRace engineRace;
 
-    public static void main(String[] args) throws IOException, EngineException {
+    /*public static void main(String[] args) throws IOException, EngineException {
         engineRace = new EngineRace();
         engineRace.open("/Users/wangshuo/polarDb/store/");
-        /*engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
+        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
         engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
+        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
         engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
-        engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));*/
+        engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));
         byte[] read = engineRace.read(makeKey((byte) 'a'));
         System.out.println(Arrays.equals(read, makeValue((byte)'a')));
         read = engineRace.read(makeKey((byte) 'b'));
@@ -31,7 +29,7 @@ public class Test {
 
         //testByte();
         //testInt();
-    }
+    }*/
 
     public static void testInt() {
         int test = Integer.MAX_VALUE;

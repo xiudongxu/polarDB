@@ -66,7 +66,7 @@ public class Data {
             dataFileChannel.write(valueBuffer);
             valueBuffer.clear();
         } catch (IOException e) {
-            throw new EngineException(RetCodeEnum.IO_ERROR, "write value IO exception!!!");
+            throw new EngineException(RetCodeEnum.IO_ERROR, "write value IO exception!!!" + e.getMessage());
         }
     }
 
