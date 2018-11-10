@@ -62,11 +62,11 @@ public class Index {
         return map.get(key);
     }
 
-    public void put(long key, long offset) {
+    public synchronized void put(long key, long offset) {
         map.put(key, offset);
     }
 
-    public void appendIndex(byte[] key, long pointer) throws EngineException {
+    public synchronized void appendIndex(byte[] key, long pointer) throws EngineException {
         offset++;
         updateMark();
         doAppendIndex(key, pointer);

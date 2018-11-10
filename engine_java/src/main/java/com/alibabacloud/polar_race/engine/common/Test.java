@@ -16,10 +16,10 @@ public class Test {
     public static void main(String[] args) throws IOException, EngineException {
         engineRace = new EngineRace();
         engineRace.open("/Users/wangshuo/polarDb/store/");
-        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
+        /*engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
         engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
         engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
-        engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));
+        engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));*/
         byte[] read = engineRace.read(makeKey((byte) 'a'));
         System.out.println(Arrays.equals(read, makeValue((byte)'a')));
         read = engineRace.read(makeKey((byte) 'b'));
