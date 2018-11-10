@@ -10,20 +10,52 @@ import java.nio.channels.FileChannel;
 
 public class Index {
 
-    private String path;
+    private int fileNo; //文件编号
+    private int offset; //当前文件偏移量
     private LongIntHashMap map;
 
-    private FileChannel fileChannel;
+    /** 索引映射到文件 */
+    private FileChannel indexFileChannel;
     private MappedFile indexMappedFile;
-    private ByteBuffer keyBuffer = ByteBuffer.allocate(Constant.keySize);
+    private ByteBuffer indexBuffer = ByteBuffer.allocate(Constant.INDEX_SIZE);
 
-    public Index() {
-        this.map = new LongIntHashMap(64000000,0.99);
+    /** 文件标记映射到文件（用于标记每个文件当前偏移量） */
+    private FileChannel markFileChannel;
+    private MappedFile markMappedFile;
+    private ByteBuffer markBuffer = ByteBuffer.allocate(Constant.INDEX_MARK_SIZE);
+
+    public Index(String path, int fileNo) throws IOException {
+        this.fileNo = fileNo;
+        //设置索引Map
+        this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
+
+        //获取标记文件channel
+        markMappedFile = new MappedFile(path + File.separator + "INDEX_MARK");
+        markFileChannel = markMappedFile.getFileChannel();
+        markFileChannel = markFileChannel.position(fileNo << 2);
+
+        //获取索引文件的偏移量
+        markFileChannel.read(markBuffer);
+        markBuffer.flip();
+        offset = ByteUtil.byte2int(markBuffer.array());
+        markBuffer.clear();
+        markFileChannel = markFileChannel.position(fileNo << 2);
+
+        //获取索引文件channel
+        indexMappedFile = new MappedFile(path + File.separator + "INDEX_" + fileNo);
+        indexFileChannel = indexMappedFile.getFileChannel();
+        //加载索引文件到Map
+        loadIndexToMap();
     }
 
-    public void openAndMapFile() throws IOException {
-        indexMappedFile = new MappedFile(path + File.separator + "INDEX");
-        fileChannel = indexMappedFile.getFileChannel();
+    private void loadIndexToMap() throws IOException {
+        if (offset == 0) return;
+        for (int i = 1; i <= offset; i++) {
+            indexFileChannel.read(indexBuffer);
+            indexBuffer.flip();
+            put(indexBuffer.getLong(), indexBuffer.getInt());
+            indexBuffer.clear();
+        }
     }
 
     public int get(long key) {
@@ -34,31 +66,41 @@ public class Index {
         map.put(key, offset);
     }
 
-    public void appendKeyToIndexFile(byte[] key) throws EngineException {
+    public void appendIndex(byte[] key, int pointer) throws EngineException {
+        if (offset >= Constant.MAX_OFFSET) {
+            throw new EngineException(RetCodeEnum.FULL, "Uneven distribution of index");
+        }
+        offset++;
+        updateMark();
+        doAppendIndex(key, pointer);
+    }
+
+    private void doAppendIndex(byte[] key, int pointer) throws EngineException {
         try {
-            keyBuffer.put(key);
-            keyBuffer.flip();
-            fileChannel.write(keyBuffer);
-            keyBuffer.clear();
+            indexBuffer.put(key);
+            indexBuffer.putInt(pointer);
+            indexBuffer.flip();
+            indexFileChannel.write(indexBuffer);
+            indexBuffer.clear();
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "write key IO exception!!!");
         }
     }
 
-    public void loadIndexFileToIndexMap(int offset) throws IOException {
-        if (offset == 0) return;
-        for (int i = 1; i <= offset; i++) {
-            fileChannel.read(keyBuffer);
-            put(ByteUtil.bytes2Long(keyBuffer.array()), i);
-            keyBuffer.clear();
+    private void updateMark() throws EngineException {
+        try {
+            markBuffer.put(ByteUtil.int2byte(offset));
+            markBuffer.flip();
+            markFileChannel.write(markBuffer);
+            markBuffer.clear();
+            markFileChannel = markFileChannel.position(fileNo << 2);
+        } catch (IOException e) {
+            throw new EngineException(RetCodeEnum.IO_ERROR, "write offset IO exception!!!");
         }
     }
 
-    public void setPath(String path) {
-        this.path = path;
-    }
-
     public void close() throws IOException {
+        markMappedFile.close();
         indexMappedFile.close();
     }
 

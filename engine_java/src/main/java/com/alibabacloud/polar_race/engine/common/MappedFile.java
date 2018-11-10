@@ -16,12 +16,8 @@ public class MappedFile {
 
     public MappedFile(String fileName) throws IOException {
         File file = new File(fileName);
-        try {
-            if(!file.exists()){
-                file.createNewFile();
-            }
-        } catch (IOException e) {
-            System.out.println(e);
+        if (!file.exists()) {
+            file.createNewFile();
         }
         randomAccessFile = new RandomAccessFile(file, "rw");
         fileChannel = randomAccessFile.getChannel();

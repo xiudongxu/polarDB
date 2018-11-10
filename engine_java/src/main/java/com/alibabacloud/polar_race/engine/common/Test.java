@@ -30,7 +30,15 @@ public class Test {
         System.out.println(Arrays.equals(read, makeValue((byte)'d')));
 
         //testByte();
+        //testInt();
+    }
 
+    public static void testInt() {
+        int test = Integer.MAX_VALUE;
+        System.out.println(test >> 24);
+        byte b = Byte.MAX_VALUE;
+
+        System.out.println(test & (b << 24));
     }
 
     public static void testByte() {

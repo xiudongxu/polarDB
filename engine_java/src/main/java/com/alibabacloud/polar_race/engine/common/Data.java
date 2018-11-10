@@ -3,133 +3,90 @@ package com.alibabacloud.polar_race.engine.common;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * @author dongxu.xiu
  * @since 2018-10-15 下午6:12
  */
 public class Data {
+    private int fileNo; //文件编号
+    private int offset; //当前文件内偏移量
 
-    /**
-     * offset：偏移量
-     * path  ：路径
-     */
-    private int offset = 0;
-    private String path;
-
-    /**
-     * 内存映射管理
-     */
+    /** 数据映射到文件 */
     private FileChannel dataFileChannel;
     private MappedFile dataMappedFile;
-    private ByteBuffer valueBuffer = ByteBuffer.allocate(Constant.valueSize);
+    private ByteBuffer valueBuffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
+
+    /** 文件标记映射到文件 */
+    private FileChannel markFileChannel;
+    private MappedFile markMappedFile;
+    private ByteBuffer markBuffer = ByteBuffer.allocate(Constant.VALUE_MARK_SIZE);
+
+    public Data(String path, int fileNo) throws IOException {
+        this.fileNo = fileNo;
+
+        //获取标记文件channel
+        markMappedFile = new MappedFile(path + File.separator + "DATA_MARK");
+        markFileChannel = markMappedFile.getFileChannel();
+        markFileChannel = markFileChannel.position(fileNo << 2);
+
+        //获取数据文件的偏移量
+        markFileChannel.read(markBuffer);
+        markBuffer.flip();
+        offset = ByteUtil.byte2int(markBuffer.array());
+        markBuffer.clear();
+        markFileChannel = markFileChannel.position(fileNo << 2);
+
+        //获取数据文件channel并设置数据文件的偏移量
+        dataMappedFile = new MappedFile(path + File.separator + "DATA_" + fileNo);
+        dataFileChannel = dataMappedFile.getFileChannel();
+        dataFileChannel = dataFileChannel.position(offset << 12);
+    }
 
     /**
-     * 管理offset记录
+     * 文件末尾追加 value
+     * @return 返回指向 value 的"指针"
+     * ps: 高位一个字节表示数据文件编号，低位三字节表示 value 在文件中的偏移量
      */
-    private FileChannel offsetFileChannel;
-    private MappedFile offsetMappedFile;
-    private ByteBuffer offsetBuffer = ByteBuffer.allocate(Constant.offsetBytes);
-
-    private ArrayBlockingQueue fileChannels = new ArrayBlockingQueue<RandomAccessFile>(64);
-
-    public  byte[] getValueFromDataFile(int offset) throws EngineException {
-        RandomAccessFile randomAccessFile = null;
-        try {
-            randomAccessFile = getFileChannels();
-            byte[] bytes = new byte[Constant.valueSize];
-            randomAccessFile.seek((long) (offset - 1) << 12);
-            randomAccessFile.read(bytes);
-            return bytes;
-        } catch (IOException | InterruptedException e) {
-            throw new EngineException(RetCodeEnum.IO_ERROR,"read value IO exception!!!");
-        } finally {
-            putFileChannel(randomAccessFile);
+    public int appendValue(byte[] value) throws EngineException {
+        if (offset >= Constant.MAX_OFFSET) {
+            throw new EngineException(RetCodeEnum.FULL, "Uneven distribution of data");
         }
-    }
-
-    public int appendValueToDataFile(byte[] value) throws EngineException {
         offset++;
-        writeOffset(offset);
-        writeData(value);
-        return offset;
+        updateMark();
+        doAppendValue(value);
+        int pointer = fileNo << 24;
+        return pointer | offset;
     }
 
-    private void writeData(byte[] value) throws EngineException {
+    private void doAppendValue(byte[] value) throws EngineException {
         try {
             valueBuffer.put(value);
             valueBuffer.flip();
             dataFileChannel.write(valueBuffer);
             valueBuffer.clear();
         } catch (IOException e) {
-            throw new EngineException(RetCodeEnum.IO_ERROR, "write data IO exception!!!");
+            throw new EngineException(RetCodeEnum.IO_ERROR, "write value IO exception!!!");
         }
     }
 
-    public void makeOffsetMappedFile() throws IOException {
-        offsetMappedFile = new MappedFile(path + File.separator + "OFFSET");
-        offsetFileChannel = offsetMappedFile.getFileChannel();
-        offsetFileChannel.read(offsetBuffer);
-        offsetBuffer.flip();
-    }
-
-    public void initOffset() {
-        offset = ByteUtil.byte2int(offsetBuffer.array());
-        offsetBuffer.clear();
-    }
-
-    public void openAndMapFile() throws IOException {
-        dataMappedFile = new MappedFile(path + File.separator + "DATA");
-        dataFileChannel = dataMappedFile.getFileChannel();
-        dataFileChannel = dataFileChannel.position(offset << 12);
-    }
-
-    private void writeOffset(int offset) throws EngineException {
+    private void updateMark() throws EngineException {
         try {
-            offsetBuffer.put(ByteUtil.int2byte(offset));
-            offsetBuffer.flip();
-            offsetFileChannel.write(offsetBuffer);
-            offsetBuffer.clear();
-            offsetFileChannel = offsetFileChannel.position(0);
+            markBuffer.put(ByteUtil.int2byte(offset));
+            markBuffer.flip();
+            markFileChannel.write(markBuffer);
+            markBuffer.clear();
+            markFileChannel = markFileChannel.position(fileNo << 2);
         } catch (IOException e) {
-            throw new EngineException(RetCodeEnum.IO_ERROR, "write offset IO exception!!!");
+            throw new EngineException(RetCodeEnum.IO_ERROR, "write offset to mark file IO exception!!!");
         }
-    }
-
-    public void initReadBlockingQueue() throws FileNotFoundException{
-        for (int i = 0; i < 64; i++) {
-            RandomAccessFile randomAccessFile = new RandomAccessFile(path + File.separator + "DATA", "r");
-            fileChannels.offer(randomAccessFile);
-        }
-    }
-
-    public RandomAccessFile getFileChannels() throws InterruptedException {
-        return (RandomAccessFile) fileChannels.take();
-    }
-    public void putFileChannel(RandomAccessFile randomAccessFile) throws EngineException {
-        try {
-            fileChannels.put(randomAccessFile);
-        } catch (InterruptedException e) {
-            throw new EngineException(RetCodeEnum.IO_ERROR,"fileChannel put exception");
-        }
-    }
-
-    public int getOffset() {
-        return offset;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
     }
 
     public void close() throws IOException {
-        offsetMappedFile.close();
+        markMappedFile.close();
         dataMappedFile.close();
     }
 }
