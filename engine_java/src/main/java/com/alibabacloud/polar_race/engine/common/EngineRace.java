@@ -36,7 +36,7 @@ public class EngineRace extends AbstractEngine {
         Data data = null;
         try {
             data = dataQueue.take();
-            int pointer = data.appendValue(value);
+            long pointer = data.appendValue(value);
             long keyL = ByteUtil.bytes2Long(key);
             int modulus = (int) (keyL & (indices.length - 1));
             indices[modulus].appendIndex(key, pointer);
@@ -56,13 +56,13 @@ public class EngineRace extends AbstractEngine {
     public byte[] read(byte[] key) throws EngineException {
         long keyL = ByteUtil.bytes2Long(key);
         int modulus = (int) (keyL & (indices.length - 1));
-        int pointer = indices[modulus].get(keyL);
+        long pointer = indices[modulus].get(keyL);
         if (pointer == 0) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "not found the value");
         }
 
-        int fileNo = pointer >> 24;
-        int offset = pointer & (Integer.MAX_VALUE >> 7);
+        int fileNo = (int) (pointer >> 32);
+        int offset = (int) (pointer & (Long.MAX_VALUE >> 32));
         BlockingQueue<RandomAccessFile> accessFiles = readMap.get(fileNo);
         RandomAccessFile accessFile = null;
         try {

@@ -49,16 +49,13 @@ public class Data {
     /**
      * 文件末尾追加 value
      * @return 返回指向 value 的"指针"
-     * ps: 高位一个字节表示数据文件编号，低位三字节表示 value 在文件中的偏移量
+     * ps: 高四个字节表示数据文件编号，低四字节表示 value 在文件中的偏移量
      */
-    public int appendValue(byte[] value) throws EngineException {
-        if (offset >= Constant.MAX_OFFSET) {
-            throw new EngineException(RetCodeEnum.FULL, "Uneven distribution of data");
-        }
+    public long appendValue(byte[] value) throws EngineException {
         offset++;
         updateMark();
         doAppendValue(value);
-        int pointer = fileNo << 24;
+        long pointer = (long) fileNo << 32;
         return pointer | offset;
     }
 

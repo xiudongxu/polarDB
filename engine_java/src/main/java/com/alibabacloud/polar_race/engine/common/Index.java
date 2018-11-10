@@ -2,7 +2,7 @@ package com.alibabacloud.polar_race.engine.common;
 
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
-import com.carrotsearch.hppc.LongIntHashMap;
+import com.carrotsearch.hppc.LongLongHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -12,7 +12,7 @@ public class Index {
 
     private int fileNo; //文件编号
     private int offset; //当前文件偏移量
-    private LongIntHashMap map;
+    private LongLongHashMap map;
 
     /** 索引映射到文件 */
     private FileChannel indexFileChannel;
@@ -27,7 +27,7 @@ public class Index {
     public Index(String path, int fileNo) throws IOException {
         this.fileNo = fileNo;
         //设置索引Map
-        this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
+        this.map = new LongLongHashMap(Constant.INIT_MAP_CAP, 0.99);
 
         //获取标记文件channel
         markMappedFile = new MappedFile(path + File.separator + "INDEX_MARK");
@@ -53,32 +53,29 @@ public class Index {
         for (int i = 1; i <= offset; i++) {
             indexFileChannel.read(indexBuffer);
             indexBuffer.flip();
-            put(indexBuffer.getLong(), indexBuffer.getInt());
+            put(indexBuffer.getLong(), indexBuffer.getLong());
             indexBuffer.clear();
         }
     }
 
-    public int get(long key) {
+    public long get(long key) {
         return map.get(key);
     }
 
-    public void put(long key, int offset) {
+    public void put(long key, long offset) {
         map.put(key, offset);
     }
 
-    public void appendIndex(byte[] key, int pointer) throws EngineException {
-        if (offset >= Constant.MAX_OFFSET) {
-            throw new EngineException(RetCodeEnum.FULL, "Uneven distribution of index");
-        }
+    public void appendIndex(byte[] key, long pointer) throws EngineException {
         offset++;
         updateMark();
         doAppendIndex(key, pointer);
     }
 
-    private void doAppendIndex(byte[] key, int pointer) throws EngineException {
+    private void doAppendIndex(byte[] key, long pointer) throws EngineException {
         try {
             indexBuffer.put(key);
-            indexBuffer.putInt(pointer);
+            indexBuffer.putLong(pointer);
             indexBuffer.flip();
             indexFileChannel.write(indexBuffer);
             indexBuffer.clear();
