@@ -1,6 +1,7 @@
 package com.alibabacloud.polar_race.engine.common;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author wangshuo
@@ -8,11 +9,13 @@ import java.io.IOException;
  */
 public class EngineBoot {
 
-    public static Data[] initDataFile(String path) throws IOException {
+    public static Data[] initDataFile(String path) throws InterruptedException {
         Data[] datas = new Data[Constant.DATA_FILE_COUNT];
+        CountDownLatch downLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
         for (int i = 0; i < Constant.DATA_FILE_COUNT; i++) {
-            datas[i] = new Data(path, i);
+            new InitDataThread(i, path, datas,downLatch).start();
         }
+        downLatch.await();
         return datas;
     }
 

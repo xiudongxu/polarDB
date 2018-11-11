@@ -19,8 +19,8 @@ public class EngineRace extends AbstractEngine {
 
         try {
             datas = EngineBoot.initDataFile(path);
-        } catch (IOException e) {
-            throw new EngineException(RetCodeEnum.IO_ERROR, "open init IO exception!!!");
+        } catch (InterruptedException e) {
+            throw new EngineException(RetCodeEnum.IO_ERROR, "init data file IO exception!!!");
         }
     }
 
