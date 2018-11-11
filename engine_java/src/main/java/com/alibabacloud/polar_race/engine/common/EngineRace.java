@@ -4,15 +4,11 @@ import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 
 public class EngineRace extends AbstractEngine {
 
     private Data[] datas;
-    private Map<Integer, BlockingQueue<RandomAccessFile>> readMap;
 
     @Override
     public void open(String path) throws EngineException {
@@ -23,7 +19,6 @@ public class EngineRace extends AbstractEngine {
 
         try {
             datas = EngineBoot.initDataFile(path);
-            readMap = EngineBoot.initReadChannel(path);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "open init IO exception!!!");
         }
@@ -41,28 +36,12 @@ public class EngineRace extends AbstractEngine {
     public byte[] read(byte[] key) throws EngineException {
         long keyL = ByteUtil.bytes2Long(key);
         int modulus = (int) (keyL & (datas.length - 1));
-        int offset = datas[modulus].get(keyL);
+        Data data = datas[modulus];
+        int offset = data.get(keyL);
         if (offset == 0) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "not found the value");
         }
-
-        BlockingQueue<RandomAccessFile> accessFiles = readMap.get(modulus);
-        RandomAccessFile accessFile = null;
-        try {
-            accessFile = accessFiles.take();
-            accessFile.seek((long) (offset - 1) << 12 );
-            byte[] bytes = new byte[Constant.VALUE_SIZE];
-            accessFile.read(bytes);
-            return bytes;
-        } catch (InterruptedException | IOException e) {
-            throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
-        } finally {
-            try {
-                accessFiles.put(accessFile);
-            } catch (InterruptedException e) {
-                System.out.println("put access file to queue error");
-            }
-        }
+        return data.readValue(offset);
     }
 
     @Override
@@ -74,7 +53,6 @@ public class EngineRace extends AbstractEngine {
     public void close() {
         try {
             EngineBoot.closeDataFile(datas);
-            EngineBoot.closeReadMap(readMap);
         } catch (IOException e) {
             System.out.println("close file resource error");
         }

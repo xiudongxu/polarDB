@@ -5,6 +5,7 @@ import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import com.carrotsearch.hppc.LongIntHashMap;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -28,6 +29,8 @@ public class Data {
     private ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
     private ByteBuffer offsetBuffer = ByteBuffer.allocateDirect(Constant.OFFSET_SIZE);
 
+    private RandomAccessFile accessFile;
+
     public Data(String path, int fileNo) throws IOException {
         this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
 
@@ -46,6 +49,9 @@ public class Data {
 
         //加载 key
         loadKeyToMap();
+
+        //访问数据
+        accessFile = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
     }
 
     private void loadKeyToMap() throws IOException {
@@ -65,6 +71,17 @@ public class Data {
         offset++;
         updateOffset();
         put(ByteUtil.bytes2Long(key), offset);
+    }
+
+    public synchronized byte[] readValue(int offset) throws EngineException {
+        try {
+            accessFile.seek((long) (offset - 1) << 12 );
+            byte[] bytes = new byte[Constant.VALUE_SIZE];
+            accessFile.read(bytes);
+            return bytes;
+        } catch (IOException e) {
+            throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
+        }
     }
 
     public int get(long key) {
@@ -113,5 +130,6 @@ public class Data {
     public void close() throws IOException {
         valueMappedFile.close();
         keyMappedFile.close();
+        accessFile.close();
     }
 }
