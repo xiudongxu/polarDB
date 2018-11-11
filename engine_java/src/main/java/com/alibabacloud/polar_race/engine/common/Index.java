@@ -62,7 +62,7 @@ public class Index {
         return map.get(key);
     }
 
-    public synchronized void put(long key, long offset) {
+    public void put(long key, long offset) {
         map.put(key, offset);
     }
 
