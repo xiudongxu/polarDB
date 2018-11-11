@@ -15,24 +15,22 @@ import java.util.concurrent.BlockingQueue;
  */
 public class EngineBoot {
 
-    public static BlockingQueue<Data> initDataFile(String path) throws IOException {
-        BlockingQueue<Data> dataBlockingQueue = new ArrayBlockingQueue<>(Constant.DATA_FILE_COUNT);
+    public static Data[] initDataFile(String path) throws IOException {
+        Data[] datas = new Data[Constant.DATA_FILE_COUNT];
         for (int i = 0; i < Constant.DATA_FILE_COUNT; i++) {
-            dataBlockingQueue.offer(new Data(path, i));
+            datas[i] = new Data(path, i);
         }
-        return dataBlockingQueue; 
+        return datas;
     }
 
-    public static Index[] initIndexFile(String path) throws IOException {
-        Index[] indices = new Index[Constant.DATA_FILE_COUNT];
-        for (int i = 0; i < Constant.DATA_FILE_COUNT; i++) {
-            indices[i] = new Index(path, i);
+    public static void closeDataFile(Data[] datas) throws IOException {
+        for (Data data : datas) {
+            data.close();
         }
-        return indices;
     }
 
     /**
-     * 为每一个数据文件绑定两个随机读channel
+     * 为每个 value 文件开启若干个访问通道
      */
     public static Map<Integer, BlockingQueue<RandomAccessFile>> initReadChannel(String path)
             throws FileNotFoundException {
@@ -41,23 +39,10 @@ public class EngineBoot {
             BlockingQueue<RandomAccessFile> queue = new ArrayBlockingQueue<>(Constant.ACCESS_FILE_COUNT);
             map.put(i, queue);
             for (int j = 0; j < Constant.ACCESS_FILE_COUNT; j++) {
-                queue.offer(new RandomAccessFile(path + File.separator + "DATA_" + i, "r"));
+                queue.offer(new RandomAccessFile(path + File.separator + "VALUE_" + i, "r"));
             }
         }
         return map;
-    }
-
-    public static void closeDataFile(BlockingQueue<Data> queue)
-            throws IOException, InterruptedException {
-        for (Data next : queue) {
-            next.close();
-        }
-    }
-
-    public static void closeIndexFile(Index[] indices) throws IOException {
-        for (Index index : indices) {
-            index.close();
-        }
     }
 
     public static void closeReadMap(Map<Integer, BlockingQueue<RandomAccessFile>> readMap)

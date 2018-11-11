@@ -14,9 +14,8 @@ public interface Constant {
 
     byte ACCESS_FILE_COUNT = 4; //访问文件的channel数
 
-    byte INDEX_MARK_SIZE = 4;
-    byte INDEX_SIZE = 16; //索引大小：key(8B) + pointer(8B) = 16
+    byte OFFSET_SIZE = 4;
 
-    byte VALUE_MARK_SIZE = 4;
+    byte KEY_SIZE = 8;
     short VALUE_SIZE = 4096;
 }

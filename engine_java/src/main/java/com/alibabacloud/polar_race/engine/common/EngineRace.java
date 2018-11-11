@@ -11,8 +11,7 @@ import java.util.concurrent.BlockingQueue;
 
 public class EngineRace extends AbstractEngine {
 
-    private Index[] indices;
-    private BlockingQueue<Data> dataQueue;
+    private Data[] datas;
     private Map<Integer, BlockingQueue<RandomAccessFile>> readMap;
 
     @Override
@@ -23,8 +22,7 @@ public class EngineRace extends AbstractEngine {
         }
 
         try {
-            dataQueue = EngineBoot.initDataFile(path);
-            indices = EngineBoot.initIndexFile(path);
+            datas = EngineBoot.initDataFile(path);
             readMap = EngineBoot.initReadChannel(path);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "open init IO exception!!!");
@@ -33,37 +31,22 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void write(byte[] key, byte[] value) throws EngineException {
-        Data data = null;
-        try {
-            data = dataQueue.take();
-            long pointer = data.appendValue(value);
-            long keyL = ByteUtil.bytes2Long(key);
-            int modulus = (int) (keyL & (indices.length - 1));
-            indices[modulus].appendIndex(key, pointer);
-            indices[modulus].put(keyL, pointer);
-        } catch (InterruptedException e) {
-            throw new EngineException(RetCodeEnum.IO_ERROR, "write data IO exception!!!");
-        } finally {
-            try {
-                dataQueue.put(data);
-            } catch (InterruptedException e) {
-                System.out.println("put data to queue error");
-            }
-        }
+        long keyL = ByteUtil.bytes2Long(key);
+        int modulus = (int) (keyL & (datas.length - 1));
+        Data data = datas[modulus];
+        data.storeKV(key, value);
     }
 
     @Override
     public byte[] read(byte[] key) throws EngineException {
         long keyL = ByteUtil.bytes2Long(key);
-        int modulus = (int) (keyL & (indices.length - 1));
-        long pointer = indices[modulus].get(keyL);
-        if (pointer == 0) {
+        int modulus = (int) (keyL & (datas.length - 1));
+        int offset = datas[modulus].get(keyL);
+        if (offset == 0) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "not found the value");
         }
 
-        int fileNo = (int) (pointer >> 32);
-        int offset = (int) (pointer & (Long.MAX_VALUE >> 31));
-        BlockingQueue<RandomAccessFile> accessFiles = readMap.get(fileNo);
+        BlockingQueue<RandomAccessFile> accessFiles = readMap.get(modulus);
         RandomAccessFile accessFile = null;
         try {
             accessFile = accessFiles.take();
@@ -90,11 +73,10 @@ public class EngineRace extends AbstractEngine {
     @Override
     public void close() {
         try {
-            EngineBoot.closeDataFile(dataQueue);
-            EngineBoot.closeIndexFile(indices);
+            EngineBoot.closeDataFile(datas);
             EngineBoot.closeReadMap(readMap);
-        } catch (IOException | InterruptedException e) {
-            System.out.println("close resource error");
+        } catch (IOException e) {
+            System.out.println("close file resource error");
         }
     }
 
