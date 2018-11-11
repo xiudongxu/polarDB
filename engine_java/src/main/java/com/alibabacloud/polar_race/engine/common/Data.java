@@ -64,6 +64,7 @@ public class Data {
         appendKey(key);
         offset++;
         updateOffset();
+        put(ByteUtil.bytes2Long(key), offset);
     }
 
     public int get(long key) {
@@ -103,6 +104,10 @@ public class Data {
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "write offset to mark file IO exception!!!");
         }
+    }
+
+    private void put(long key, int offset) {
+        map.put(key, offset);
     }
 
     public void close() throws IOException {
