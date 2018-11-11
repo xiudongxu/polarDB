@@ -12,7 +12,7 @@ public interface Constant {
 
     int INIT_MAP_CAP = TOTAL_KV_COUNT / DATA_FILE_COUNT; //初始索引 map 的容量
 
-    byte ACCESS_FILE_COUNT = 4; //访问文件的channel数
+    byte ACCESS_FILE_COUNT = 32; //访问文件的channel数
 
     byte OFFSET_SIZE = 4;
 
