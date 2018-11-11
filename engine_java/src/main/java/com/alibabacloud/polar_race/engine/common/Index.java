@@ -17,12 +17,12 @@ public class Index {
     /** 索引映射到文件 */
     private FileChannel indexFileChannel;
     private MappedFile indexMappedFile;
-    private ByteBuffer indexBuffer = ByteBuffer.allocate(Constant.INDEX_SIZE);
+    private ByteBuffer indexBuffer = ByteBuffer.allocateDirect(Constant.INDEX_SIZE);
 
     /** 文件标记映射到文件（用于标记每个文件当前偏移量） */
     private FileChannel markFileChannel;
     private MappedFile markMappedFile;
-    private ByteBuffer markBuffer = ByteBuffer.allocate(Constant.INDEX_MARK_SIZE);
+    private ByteBuffer markBuffer = ByteBuffer.allocateDirect(Constant.INDEX_MARK_SIZE);
 
     public Index(String path, int fileNo) throws IOException {
         this.fileNo = fileNo;
@@ -37,7 +37,7 @@ public class Index {
         //获取索引文件的偏移量
         markFileChannel.read(markBuffer);
         markBuffer.flip();
-        offset = ByteUtil.byte2int(markBuffer.array());
+        offset = markBuffer.remaining() > 0 ? markBuffer.getInt() : offset;
         markBuffer.clear();
         markFileChannel = markFileChannel.position(fileNo << 2);
 

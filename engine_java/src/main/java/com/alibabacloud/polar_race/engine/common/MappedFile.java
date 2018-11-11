@@ -30,7 +30,6 @@ public class MappedFile {
     public void close() throws IOException {
         randomAccessFile.close();
         randomAccessFile = null;
-        fileChannel.close();
         fileChannel = null;
     }
 }

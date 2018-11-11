@@ -18,12 +18,12 @@ public class Data {
     /** 数据映射到文件 */
     private FileChannel dataFileChannel;
     private MappedFile dataMappedFile;
-    private ByteBuffer valueBuffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
+    private ByteBuffer valueBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
 
     /** 文件标记映射到文件 */
     private FileChannel markFileChannel;
     private MappedFile markMappedFile;
-    private ByteBuffer markBuffer = ByteBuffer.allocate(Constant.VALUE_MARK_SIZE);
+    private ByteBuffer markBuffer = ByteBuffer.allocateDirect(Constant.VALUE_MARK_SIZE);
 
     public Data(String path, int fileNo) throws IOException {
         this.fileNo = fileNo;
@@ -36,7 +36,7 @@ public class Data {
         //获取数据文件的偏移量
         markFileChannel.read(markBuffer);
         markBuffer.flip();
-        offset = ByteUtil.byte2int(markBuffer.array());
+        offset = markBuffer.remaining() > 0 ? markBuffer.getInt() : offset;
         markBuffer.clear();
         markFileChannel = markFileChannel.position(fileNo << 2);
 
