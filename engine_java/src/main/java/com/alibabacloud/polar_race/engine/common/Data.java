@@ -43,7 +43,7 @@ public class Data {
         //获取数据文件channel并设置数据文件的偏移量
         dataMappedFile = new MappedFile(path + File.separator + "DATA_" + fileNo);
         dataFileChannel = dataMappedFile.getFileChannel();
-        dataFileChannel = dataFileChannel.position(offset << 12);
+        dataFileChannel = dataFileChannel.position((long) offset << 12);
     }
 
     /**

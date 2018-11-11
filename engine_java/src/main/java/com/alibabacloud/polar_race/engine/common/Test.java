@@ -16,9 +16,9 @@ public class Test {
     public static void main(String[] args) throws IOException, EngineException {
         engineRace = new EngineRace();
         engineRace.open("/Users/wangshuo/polarDb/store/");
-       /* engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
+        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
         engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
-        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));*/
+        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
         engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
         engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));
         byte[] read = engineRace.read(makeKey((byte) 'a'));
@@ -35,11 +35,13 @@ public class Test {
     }
 
     public static void testInt() {
-        int test = Integer.MAX_VALUE;
-        System.out.println(test >> 24);
-        byte b = Byte.MAX_VALUE;
-
-        System.out.println(test & (b << 24));
+        //int test = Integer.MAX_VALUE;
+        int test = 0;
+        System.out.println(test);
+        System.out.println(test << 24);
+        System.out.println(test);
+        //byte b = Byte.MAX_VALUE;
+        //System.out.println(test & (b << 24));
     }
 
     public static void testByte() {
