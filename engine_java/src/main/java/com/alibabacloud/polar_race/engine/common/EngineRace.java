@@ -62,7 +62,7 @@ public class EngineRace extends AbstractEngine {
         }
 
         int fileNo = (int) (pointer >> 32);
-        int offset = (int) (pointer & (Long.MAX_VALUE >> 32));
+        int offset = (int) (pointer & (Long.MAX_VALUE >> 31));
         BlockingQueue<RandomAccessFile> accessFiles = readMap.get(fileNo);
         RandomAccessFile accessFile = null;
         try {

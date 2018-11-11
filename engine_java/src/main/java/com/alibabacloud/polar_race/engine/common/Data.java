@@ -52,9 +52,9 @@ public class Data {
      * ps: 高四个字节表示数据文件编号，低四字节表示 value 在文件中的偏移量
      */
     public long appendValue(byte[] value) throws EngineException {
+        doAppendValue(value);
         offset++;
         updateMark();
-        doAppendValue(value);
         long pointer = (long) fileNo << 32;
         return pointer | offset;
     }

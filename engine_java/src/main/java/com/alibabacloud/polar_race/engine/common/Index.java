@@ -67,9 +67,9 @@ public class Index {
     }
 
     public synchronized void appendIndex(byte[] key, long pointer) throws EngineException {
+        doAppendIndex(key, pointer);
         offset++;
         updateMark();
-        doAppendIndex(key, pointer);
     }
 
     private void doAppendIndex(byte[] key, long pointer) throws EngineException {
