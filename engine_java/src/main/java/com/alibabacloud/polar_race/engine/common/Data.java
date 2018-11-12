@@ -26,7 +26,6 @@ public class Data {
     /** key 文件：首四字节存储偏移量，后面追加 key */
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
-    private ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
 
     private RandomAccessFile accessFile;
 
@@ -36,28 +35,24 @@ public class Data {
         //创建 key 的存储文件，并获取偏移量
         keyMappedFile = new MappedFile(path + File.separator + "KEY_" + fileNo);
         keyFileChannel = keyMappedFile.getFileChannel();
-        subscript = new AtomicInteger((int) ((keyFileChannel.size() >> 3) - 1));
+        //加载 key
+        int offset = 0;
+        ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
+        while (keyFileChannel.read(keyBuffer) != -1) {
+            keyFileChannel.read(keyBuffer);
+            keyBuffer.flip();
+            map.put(keyBuffer.getLong(), offset);
+            keyBuffer.clear();
+            offset++;
+        }
+        subscript = new AtomicInteger(offset);
 
         //创建 value 的存储文件，并设置其偏移量
         valueMappedFile = new MappedFile(path + File.separator + "VALUE_" + fileNo);
         valueFileChannel = valueMappedFile.getFileChannel();
 
-        //加载 key
-        loadKeyToMap();
-
         //访问数据
         accessFile = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
-    }
-
-    private void loadKeyToMap() throws IOException {
-        if (subscript.get() < 0) return;
-        keyFileChannel = keyFileChannel.position(0);
-        for (int i = 0; i <= subscript.get(); i++) {
-            keyFileChannel.read(keyBuffer);
-            keyBuffer.flip();
-            map.put(keyBuffer.getLong(), i);
-            keyBuffer.clear();
-        }
     }
 
     public void storeKV(byte[] key, byte[] value) throws EngineException {

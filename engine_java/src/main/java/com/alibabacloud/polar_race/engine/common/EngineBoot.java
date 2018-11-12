@@ -13,7 +13,7 @@ public class EngineBoot {
         Data[] datas = new Data[Constant.DATA_FILE_COUNT];
         CountDownLatch downLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
         for (int i = 0; i < Constant.DATA_FILE_COUNT; i++) {
-            new InitDataThread(i, path, datas,downLatch).start();
+            new InitDataThread(i, path, datas, downLatch).start();
         }
         downLatch.await();
         return datas;

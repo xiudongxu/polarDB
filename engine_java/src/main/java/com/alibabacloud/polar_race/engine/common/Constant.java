@@ -12,8 +12,6 @@ public interface Constant {
 
     int INIT_MAP_CAP = TOTAL_KV_COUNT / DATA_FILE_COUNT; //初始索引 map 的容量
 
-    byte OFFSET_SIZE = 4;
-
     byte KEY_SIZE = 8;
     short VALUE_SIZE = 4096;
 }
