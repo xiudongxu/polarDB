@@ -37,7 +37,7 @@ public class Data {
         //创建 key 的存储文件，并获取偏移量
         keyMappedFile = new MappedFile(path + File.separator + "KEY_" + fileNo);
         keyFileChannel = keyMappedFile.getFileChannel();
-        subscript = new AtomicInteger((int) (keyFileChannel.size() >> 2 - 1));
+        subscript = new AtomicInteger((int) ((keyFileChannel.size() >> 3) - 1));
 
         //创建 value 的存储文件，并设置其偏移量
         valueMappedFile = new MappedFile(path + File.separator + "VALUE_" + fileNo);
@@ -52,6 +52,7 @@ public class Data {
 
     private void loadKeyToMap() throws IOException {
         if (subscript.get() < 0) return;
+        keyFileChannel = keyFileChannel.position(0);
         for (int i = 0; i <= subscript.get(); i++) {
             keyFileChannel.read(keyBuffer);
             keyBuffer.flip();
@@ -63,13 +64,13 @@ public class Data {
     public void storeKV(byte[] key, byte[] value) throws EngineException {
         int newSubscript = subscript.addAndGet(1);
         appendValue(value, newSubscript << 12);
-        appendKey(key, newSubscript << 2);
+        appendKey(key, newSubscript << 3);
         put(ByteUtil.bytes2Long(key), newSubscript);
     }
 
     public synchronized byte[] readValue(int offset) throws EngineException {
         try {
-            accessFile.seek(offset);
+            accessFile.seek(offset << 12);
             byte[] bytes = new byte[Constant.VALUE_SIZE];
             accessFile.read(bytes);
             return bytes;

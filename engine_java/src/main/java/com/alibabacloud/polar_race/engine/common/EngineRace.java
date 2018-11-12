@@ -38,7 +38,7 @@ public class EngineRace extends AbstractEngine {
         int modulus = (int) (keyL & (datas.length - 1));
         Data data = datas[modulus];
         int offset = data.get(keyL);
-        if (offset == 0) {
+        if (offset == -1) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "not found the value");
         }
         return data.readValue(offset);
