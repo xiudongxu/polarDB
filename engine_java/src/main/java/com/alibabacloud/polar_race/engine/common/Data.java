@@ -27,7 +27,7 @@ public class Data {
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
 
-    private RandomAccessFile accessFile;
+    private FileChannel accessFileChannel;
 
     public Data(String path, int fileNo) throws IOException {
         this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
@@ -52,7 +52,8 @@ public class Data {
         valueFileChannel = valueMappedFile.getFileChannel();
 
         //访问数据
-        accessFile = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+        accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r")
+                .getChannel();
     }
 
     public void storeKV(byte[] key, byte[] value) throws EngineException {
@@ -62,12 +63,11 @@ public class Data {
         put(ByteUtil.bytes2Long(key), newSubscript);
     }
 
-    public synchronized byte[] readValue(int offset) throws EngineException {
+    public byte[] readValue(int offset) throws EngineException {
         try {
-            accessFile.seek((long) offset << 12);
-            byte[] bytes = new byte[Constant.VALUE_SIZE];
-            accessFile.read(bytes);
-            return bytes;
+            ByteBuffer buffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
+            accessFileChannel.read(buffer, (long) offset << 12);
+            return buffer.array();
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
         }
@@ -100,6 +100,6 @@ public class Data {
     public void close() throws IOException {
         valueMappedFile.close();
         keyMappedFile.close();
-        accessFile.close();
+        accessFileChannel.close();
     }
 }
