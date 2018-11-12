@@ -94,11 +94,11 @@ public class Data {
         }
     }
 
-    private synchronized void put(long key, int offset) {
+    private void put(long key, int offset) {
         map.put(key, offset);
     }
 
-    public synchronized int get(long key) {
+    public int get(long key) {
         return map.get(key);
     }
 
