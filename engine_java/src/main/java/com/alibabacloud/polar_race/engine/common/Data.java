@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 数据对存储相关
@@ -15,7 +16,7 @@ import java.nio.channels.FileChannel;
  * key -> offset 其中 key 为实际的 key，offset 为存储在 value 文件的偏移量
  */
 public class Data {
-    private int offset; //文件内偏移量
+    private AtomicInteger subscript; //key/value 下标
     private LongIntHashMap map; //key -> offset map
 
     /** value 文件 */
@@ -27,7 +28,6 @@ public class Data {
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
     private ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
-    private ByteBuffer offsetBuffer = ByteBuffer.allocateDirect(Constant.OFFSET_SIZE);
 
     private RandomAccessFile accessFile;
 
@@ -37,15 +37,11 @@ public class Data {
         //创建 key 的存储文件，并获取偏移量
         keyMappedFile = new MappedFile(path + File.separator + "KEY_" + fileNo);
         keyFileChannel = keyMappedFile.getFileChannel();
-        keyFileChannel.read(offsetBuffer);
-        offsetBuffer.flip();
-        offset = offsetBuffer.remaining() > 0 ? offsetBuffer.getInt() : offset;
-        offsetBuffer.clear();
+        subscript = new AtomicInteger((int) (keyFileChannel.size() >> 2 - 1));
 
         //创建 value 的存储文件，并设置其偏移量
         valueMappedFile = new MappedFile(path + File.separator + "VALUE_" + fileNo);
         valueFileChannel = valueMappedFile.getFileChannel();
-        valueFileChannel = valueFileChannel.position((long) offset << 12);
 
         //加载 key
         loadKeyToMap();
@@ -55,9 +51,8 @@ public class Data {
     }
 
     private void loadKeyToMap() throws IOException {
-        if (offset == 0) return;
-        keyFileChannel.position(Constant.OFFSET_SIZE); //设置key的读取位置
-        for (int i = 1; i <= offset; i++) {
+        if (subscript.get() < 0) return;
+        for (int i = 0; i <= subscript.get(); i++) {
             keyFileChannel.read(keyBuffer);
             keyBuffer.flip();
             map.put(keyBuffer.getLong(), i);
@@ -65,17 +60,16 @@ public class Data {
         }
     }
 
-    public synchronized void storeKV(byte[] key, byte[] value) throws EngineException {
-        appendValue(value);
-        appendKey(key);
-        offset++;
-        updateOffset();
-        put(ByteUtil.bytes2Long(key), offset);
+    public void storeKV(byte[] key, byte[] value) throws EngineException {
+        int newSubscript = subscript.addAndGet(1);
+        appendValue(value, newSubscript << 12);
+        appendKey(key, newSubscript << 2);
+        put(ByteUtil.bytes2Long(key), newSubscript);
     }
 
     public synchronized byte[] readValue(int offset) throws EngineException {
         try {
-            accessFile.seek((long) (offset - 1) << 12 );
+            accessFile.seek(offset);
             byte[] bytes = new byte[Constant.VALUE_SIZE];
             accessFile.read(bytes);
             return bytes;
@@ -88,38 +82,25 @@ public class Data {
         return map.get(key);
     }
 
-    private void appendValue(byte[] value) throws EngineException {
+    private void appendValue(byte[] value, long pos) throws EngineException {
         try {
             valueBuffer.put(value);
             valueBuffer.flip();
-            valueFileChannel.write(valueBuffer);
+            valueFileChannel.write(valueBuffer, pos);
             valueBuffer.clear();
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "write value IO exception!!!" + e.getMessage());
         }
     }
 
-    private void appendKey(byte[] key) throws EngineException {
+    private void appendKey(byte[] key, long pos) throws EngineException {
         try {
-            keyFileChannel.position(Constant.OFFSET_SIZE + (offset << 3)); //设置key的追加位置
             keyBuffer.put(key);
             keyBuffer.flip();
-            keyFileChannel.write(keyBuffer);
+            keyFileChannel.write(keyBuffer, pos);
             keyBuffer.clear();
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "write key IO exception!!!");
-        }
-    }
-
-    private void updateOffset() throws EngineException {
-        try {
-            keyFileChannel.position(0); //设置偏移量的写入位置
-            offsetBuffer.put(ByteUtil.int2byte(offset));
-            offsetBuffer.flip();
-            keyFileChannel.write(offsetBuffer);
-            offsetBuffer.clear();
-        } catch (IOException e) {
-            throw new EngineException(RetCodeEnum.IO_ERROR, "write offset to mark file IO exception!!!");
         }
     }
 
