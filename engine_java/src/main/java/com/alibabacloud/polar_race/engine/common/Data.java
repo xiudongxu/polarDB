@@ -41,7 +41,7 @@ public class Data {
         keyMappedFile = new MappedFile(path + File.separator + "KEY_" + fileNo);
         keyFileChannel = keyMappedFile.getFileChannel();
         //加载 key
-        int offset = -1;
+        int offset = 0;
         ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
         while (keyFileChannel.read(keyBuffer) != -1) {
             offset++;
@@ -62,15 +62,15 @@ public class Data {
 
     public void storeKV(byte[] key, byte[] value) throws EngineException {
         int newSubscript = subscript.addAndGet(1);
-        appendValue(value, (long) newSubscript << 12);
-        appendKey(key, newSubscript << 3);
+        appendValue(value, (long) (newSubscript - 1) << 12);
+        appendKey(key, (newSubscript - 1) << 3);
         put(ByteUtil.bytes2Long(key), newSubscript);
     }
 
     public byte[] readValue(int offset) throws EngineException {
         try {
             ByteBuffer buffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
-            accessFileChannel.read(buffer, (long) offset << 12);
+            accessFileChannel.read(buffer, (long) (offset - 1) << 12);
             return buffer.array();
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");

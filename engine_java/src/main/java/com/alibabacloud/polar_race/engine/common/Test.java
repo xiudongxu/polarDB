@@ -2,8 +2,6 @@ package com.alibabacloud.polar_race.engine.common;
 
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * @author dongxu.xiu
@@ -16,19 +14,9 @@ public class Test {
     public static void main(String[] args) throws IOException, EngineException {
         engineRace = new EngineRace();
         engineRace.open("/Users/wangshuo/polarDb/store/");
-        /*engineRace.write(ByteUtil.toBytes("EB759AC945E32848"), makeValue((byte) 'a'));
-        engineRace.write(ByteUtil.toBytes("4256C8C29E05AD72"), makeValue((byte) 'b'));
-        byte[] read = engineRace.read(ByteUtil.toBytes("EB759AC945E32848"));
-        System.out.println(Arrays.equals(read, makeValue((byte)'a')));
-        read = engineRace.read(ByteUtil.toBytes("4256C8C29E05AD72"));
-        System.out.println(Arrays.equals(read, makeValue((byte)'b')));*/
-
-
-
-
+        engineRace.read(ByteUtil.toBytes("AEEA7FF2D71DC0B9"));
         /*engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
-        engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));*/
-        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
+        engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
         engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
         engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));
         byte[] read = engineRace.read(makeKey((byte) 'a'));
@@ -38,33 +26,8 @@ public class Test {
         read = engineRace.read(makeKey((byte) 'c'));
         System.out.println(Arrays.equals(read, makeValue((byte)'c')));
         read = engineRace.read(makeKey((byte) 'd'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'d')));
-
-        //testByte();
-        //testInt();
+        System.out.println(Arrays.equals(read, makeValue((byte)'d')));*/
     }
-
-    public static void testInt() {
-        //int test = Integer.MAX_VALUE;
-        int test = 0;
-        System.out.println(test);
-        System.out.println(test << 24);
-        System.out.println(test);
-        //byte b = Byte.MAX_VALUE;
-        //System.out.println(test & (b << 24));
-    }
-
-    public static void testByte() {
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.put(ByteUtil.int2byte(4));
-
-        /*buffer.put(new byte[]{1, 1, 1, 1});
-        System.out.println(ByteUtil.byte2int(buffer.array()));
-        buffer.flip();
-        buffer.put((byte) 2);
-        System.out.println(ByteUtil.byte2int(buffer.array()));*/
-    }
-
 
     //测试步骤
     // 1.从0开始创建文件，读写正常
