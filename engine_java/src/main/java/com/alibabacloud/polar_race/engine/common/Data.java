@@ -62,14 +62,14 @@ public class Data {
 
     public void storeKV(byte[] key, byte[] value) throws EngineException {
         int newSubscript = subscript.addAndGet(1);
-        appendValue(value, newSubscript << 12);
+        appendValue(value, (long) newSubscript << 12);
         appendKey(key, newSubscript << 3);
         put(ByteUtil.bytes2Long(key), newSubscript);
     }
 
     public synchronized byte[] readValue(int offset) throws EngineException {
         try {
-            accessFile.seek(offset << 12);
+            accessFile.seek((long) offset << 12);
             byte[] bytes = new byte[Constant.VALUE_SIZE];
             accessFile.read(bytes);
             return bytes;
