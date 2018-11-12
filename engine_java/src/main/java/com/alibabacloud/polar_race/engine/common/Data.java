@@ -90,7 +90,7 @@ public class Data {
         }
     }
 
-    private void appendKey(byte[] key, long pos) throws EngineException {
+    private void appendKey(byte[] key, int pos) throws EngineException {
         try {
             keyFileChannel.write(ByteBuffer.wrap(key), pos);
         } catch (IOException e) {
