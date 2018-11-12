@@ -73,10 +73,6 @@ public class Data {
         }
     }
 
-    public int get(long key) {
-        return map.get(key);
-    }
-
     private void appendValue(byte[] value, long pos) throws EngineException {
         try {
             valueFileChannel.write(ByteBuffer.wrap(value), pos);
@@ -93,8 +89,12 @@ public class Data {
         }
     }
 
-    private void put(long key, int offset) {
+    private synchronized void put(long key, int offset) {
         map.put(key, offset);
+    }
+
+    public synchronized int get(long key) {
+        return map.get(key);
     }
 
     public void close() throws IOException {
