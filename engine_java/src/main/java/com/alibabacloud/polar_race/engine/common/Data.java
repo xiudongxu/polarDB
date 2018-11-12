@@ -41,13 +41,13 @@ public class Data {
         keyMappedFile = new MappedFile(path + File.separator + "KEY_" + fileNo);
         keyFileChannel = keyMappedFile.getFileChannel();
         //加载 key
-        int offset = 0;
+        int offset = -1;
         ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
         while (keyFileChannel.read(keyBuffer) != -1) {
+            offset++;
             keyBuffer.flip();
             map.put(keyBuffer.getLong(), offset);
             keyBuffer.clear();
-            offset++;
         }
         subscript = new AtomicInteger(offset);
 
