@@ -16,14 +16,19 @@ import java.util.concurrent.atomic.AtomicInteger;
  * key -> offset 其中 key 为实际的 key，offset 为存储在 value 文件的偏移量
  */
 public class Data {
+
     private AtomicInteger subscript; //key/value 下标
     private LongIntHashMap map; //key -> offset map
 
-    /** value 文件 */
+    /**
+     * value 文件
+     */
     private MappedFile valueMappedFile;
     private FileChannel valueFileChannel;
 
-    /** key 文件：首四字节存储偏移量，后面追加 key */
+    /**
+     * key 文件：首四字节存储偏移量，后面追加 key
+     */
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
 
@@ -39,7 +44,6 @@ public class Data {
         int offset = 0;
         ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
         while (keyFileChannel.read(keyBuffer) != -1) {
-            keyFileChannel.read(keyBuffer);
             keyBuffer.flip();
             map.put(keyBuffer.getLong(), offset);
             keyBuffer.clear();
@@ -77,7 +81,8 @@ public class Data {
         try {
             valueFileChannel.write(ByteBuffer.wrap(value), pos);
         } catch (IOException e) {
-            throw new EngineException(RetCodeEnum.IO_ERROR, "write value IO exception!!!" + e.getMessage());
+            throw new EngineException(RetCodeEnum.IO_ERROR,
+                    "write value IO exception!!!" + e.getMessage());
         }
     }
 
