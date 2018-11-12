@@ -42,11 +42,14 @@ public class Data {
         keyFileChannel = keyMappedFile.getFileChannel();
         //加载 key
         int offset = 0;
-        ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
+        ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.ONE_LOAD_SIZE);
         while (keyFileChannel.read(keyBuffer) != -1) {
-            offset++;
             keyBuffer.flip();
-            map.put(keyBuffer.getLong(), offset);
+            int tmpCount = keyBuffer.limit() / Constant.KEY_SIZE;
+            for (int i = 0; i < tmpCount; i++) {
+                offset++;
+                map.put(keyBuffer.getLong(), offset);
+            }
             keyBuffer.clear();
         }
         subscript = new AtomicInteger(offset);
