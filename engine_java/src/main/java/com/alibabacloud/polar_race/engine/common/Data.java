@@ -22,7 +22,6 @@ public class Data {
     /** value 文件 */
     private MappedFile valueMappedFile;
     private FileChannel valueFileChannel;
-    private ByteBuffer valueBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
 
     /** key 文件：首四字节存储偏移量，后面追加 key */
     private MappedFile keyMappedFile;
@@ -85,10 +84,7 @@ public class Data {
 
     private void appendValue(byte[] value, long pos) throws EngineException {
         try {
-            valueBuffer.put(value);
-            valueBuffer.flip();
-            valueFileChannel.write(valueBuffer, pos);
-            valueBuffer.clear();
+            valueFileChannel.write(ByteBuffer.wrap(value), pos);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "write value IO exception!!!" + e.getMessage());
         }
@@ -96,10 +92,7 @@ public class Data {
 
     private void appendKey(byte[] key, long pos) throws EngineException {
         try {
-            keyBuffer.put(key);
-            keyBuffer.flip();
-            keyFileChannel.write(keyBuffer, pos);
-            keyBuffer.clear();
+            keyFileChannel.write(ByteBuffer.wrap(key), pos);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "write key IO exception!!!");
         }

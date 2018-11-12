@@ -16,7 +16,7 @@ public class Test {
     public static void main(String[] args) throws IOException, EngineException {
         engineRace = new EngineRace();
         engineRace.open("/Users/wangshuo/polarDb/store/");
-        /*engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
+       /* engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
         engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));*/
         engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
         engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
