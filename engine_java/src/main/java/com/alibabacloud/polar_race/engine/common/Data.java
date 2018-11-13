@@ -2,7 +2,6 @@ package com.alibabacloud.polar_race.engine.common;
 
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
-import com.carrotsearch.hppc.LongIntHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -18,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Data {
 
     private AtomicInteger subscript; //key/value 下标
-    private LongIntHashMap map; //key -> offset map
+    private MyLongIntHashMap map; //key -> offset map
 
     /**
      * value 文件
@@ -35,7 +34,7 @@ public class Data {
     private FileChannel accessFileChannel;
 
     public Data(String path, int fileNo) throws IOException {
-        this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
+        this.map = new MyLongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
 
         //创建 key 的存储文件，并获取偏移量
         keyMappedFile = new MappedFile(path + File.separator + "KEY_" + fileNo);
@@ -104,7 +103,7 @@ public class Data {
         return map.get(key);
     }
 
-    public LongIntHashMap getMap() {
+    public MyLongIntHashMap getMap() {
         return map;
     }
 
