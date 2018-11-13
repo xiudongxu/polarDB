@@ -19,21 +19,21 @@ public class Data {
 
     private AtomicInteger subscript; //key/value 下标
     private LongIntHashMap map; //key -> offset map
-    private ByteBuffer valueBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
-    private ByteBuffer readBuffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
 
     /**
      * value 文件
      */
     private MappedFile valueMappedFile;
     private FileChannel valueFileChannel;
-    private ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
+    private ByteBuffer valueBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
+    private ByteBuffer readBuffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
 
     /**
      * key 文件：首四字节存储偏移量，后面追加 key
      */
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
+    private ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
 
     private FileChannel accessFileChannel;
 
@@ -45,14 +45,14 @@ public class Data {
         keyFileChannel = keyMappedFile.getFileChannel();
         //加载 key
         int offset = 0;
-        ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.ONE_LOAD_SIZE);
-        while (keyFileChannel.read(keyBuffer) != -1) {
-            keyBuffer.flip();
-            while (keyBuffer.hasRemaining()) {
+        ByteBuffer keysBuffer = ByteBuffer.allocateDirect(Constant.ONE_LOAD_SIZE);
+        while (keyFileChannel.read(keysBuffer) != -1) {
+            keysBuffer.flip();
+            while (keysBuffer.hasRemaining()) {
                 offset++;
-                map.put(keyBuffer.getLong(), offset);
+                map.put(keysBuffer.getLong(), offset);
             }
-            keyBuffer.clear();
+            keysBuffer.clear();
         }
         subscript = new AtomicInteger(offset);
 
@@ -73,6 +73,7 @@ public class Data {
 
     public synchronized byte[] readValue(int offset) throws EngineException {
         try {
+            readBuffer.clear();
             accessFileChannel.read(readBuffer, (long) (offset - 1) << 12);
             return readBuffer.array();
         } catch (IOException e) {

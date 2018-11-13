@@ -16,9 +16,13 @@ public class Test {
         engineRace = new EngineRace();
         engineRace.open("/Users/wangshuo/polarDb/store/");
         //engineRace.write(ByteUtil.long2Bytes(298792), makeValue((byte) 'q'));
-        byte[] read = engineRace.read(ByteUtil.long2Bytes(298792));
-        System.out.println(Arrays.equals(read, makeValue((byte)'q')));
-        engineRace.read(makeKey((byte) 'a'));
+        //byte[] read = engineRace.read(ByteUtil.long2Bytes(298792));
+        engineRace.write(makeKey((byte) '!'), makeValue((byte) '!'));
+        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
+        byte[] read = engineRace.read(makeKey((byte) 'a'));
+        System.out.println(Arrays.equals(read, makeValue((byte)'a')));
+        engineRace.read(makeKey((byte) '!'));
+        System.out.println(Arrays.equals(read, makeValue((byte)'!')));
 
         /*for (Data data : engineRace.getDatas()) {
             System.out.println(data.getMap());
