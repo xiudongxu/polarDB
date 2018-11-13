@@ -18,12 +18,15 @@ public class Data {
 
     private AtomicInteger subscript; //key/value 下标
     private MyLongIntHashMap map; //key -> offset map
+    private ByteBuffer valueBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
+    private ByteBuffer readBuffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
 
     /**
      * value 文件
      */
     private MappedFile valueMappedFile;
     private FileChannel valueFileChannel;
+    private ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
 
     /**
      * key 文件：首四字节存储偏移量，后面追加 key
@@ -63,37 +66,45 @@ public class Data {
 
     public void storeKV(byte[] key, byte[] value) throws EngineException {
         int newSubscript = subscript.addAndGet(1);
-        appendValue(value, (long) (newSubscript - 1) << 12);
-        appendKey(key, (newSubscript - 1) << 3);
+        appendValueAndKey(value, key, newSubscript);
+        //appendKey(key, (newSubscript - 1) << 3);
         put(ByteUtil.bytes2Long(key), newSubscript);
     }
 
-    public byte[] readValue(int offset) throws EngineException {
+    public synchronized byte[] readValue(int offset) throws EngineException {
         try {
-            ByteBuffer buffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
-            accessFileChannel.read(buffer, (long) (offset - 1) << 12);
-            return buffer.array();
+            readBuffer.clear();
+            accessFileChannel.read(readBuffer, (long) (offset - 1) << 12);
+            return readBuffer.array();
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
         }
     }
 
-    private void appendValue(byte[] value, long pos) throws EngineException {
+    private synchronized void appendValueAndKey(byte[] value, byte[] key, int offset) throws EngineException {
         try {
-            valueFileChannel.write(ByteBuffer.wrap(value), pos);
+            valueBuffer.put(value);
+            valueBuffer.flip();
+            valueFileChannel.write(valueBuffer, (long) (offset - 1) << 12);
+            valueBuffer.clear();
+
+            keyBuffer.put(key);
+            keyBuffer.flip();
+            keyFileChannel.write(keyBuffer, (long) (offset - 1) << 3);
+            keyBuffer.clear();
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
         }
     }
 
-    private void appendKey(byte[] key, int pos) throws EngineException {
+    /*private void appendKey(byte[] key, int pos) throws EngineException {
         try {
             keyFileChannel.write(ByteBuffer.wrap(key), pos);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "write key IO exception!!!");
         }
-    }
+    }*/
 
     private void put(long key, int offset) {
         map.put(key, offset);
