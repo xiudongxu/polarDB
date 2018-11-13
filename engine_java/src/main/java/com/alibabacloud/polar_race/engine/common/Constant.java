@@ -15,5 +15,5 @@ public interface Constant {
     byte KEY_SIZE = 8;
     short VALUE_SIZE = 4096;
 
-    int ONE_LOAD_SIZE = 1048576; //一次加载的字节数  1024*1024
+    int ONE_LOAD_SIZE = 1024 * 1024 * 4; //一次加载的字节数  1024*1024
 }
