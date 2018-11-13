@@ -57,4 +57,8 @@ public class EngineRace extends AbstractEngine {
             System.out.println("close file resource error");
         }
     }
+
+    public Data[] getDatas() {
+        return datas;
+    }
 }

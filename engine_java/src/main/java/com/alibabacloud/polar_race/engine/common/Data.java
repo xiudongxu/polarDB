@@ -45,8 +45,7 @@ public class Data {
         ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.ONE_LOAD_SIZE);
         while (keyFileChannel.read(keyBuffer) != -1) {
             keyBuffer.flip();
-            int tmpCount = keyBuffer.limit() / Constant.KEY_SIZE;
-            for (int i = 0; i < tmpCount; i++) {
+            while (keyBuffer.hasRemaining()) {
                 offset++;
                 map.put(keyBuffer.getLong(), offset);
             }
@@ -103,6 +102,10 @@ public class Data {
 
     public int get(long key) {
         return map.get(key);
+    }
+
+    public LongIntHashMap getMap() {
+        return map;
     }
 
     public void close() throws IOException {
