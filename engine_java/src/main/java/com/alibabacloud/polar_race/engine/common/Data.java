@@ -75,6 +75,7 @@ public class Data {
         try {
             readBuffer.clear();
             accessFileChannel.read(readBuffer, (long) (offset - 1) << 12);
+            readBuffer.flip();
             return readBuffer.array();
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
