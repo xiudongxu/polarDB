@@ -28,6 +28,7 @@ public class InitDataThread extends Thread {
             downLatch.countDown();
         } catch (IOException e) {
             System.out.println("init data file IO exception!!!");
+            downLatch.countDown();
         }
     }
 }
