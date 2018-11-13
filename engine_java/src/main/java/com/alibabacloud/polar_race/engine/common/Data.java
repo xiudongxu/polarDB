@@ -2,6 +2,7 @@ package com.alibabacloud.polar_race.engine.common;
 
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
+import com.carrotsearch.hppc.LongIntHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -17,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Data {
 
     private AtomicInteger subscript; //key/value 下标
-    private MyLongIntHashMap map; //key -> offset map
+    private LongIntHashMap map; //key -> offset map
     private ByteBuffer valueBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
     private ByteBuffer readBuffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
 
@@ -37,7 +38,7 @@ public class Data {
     private FileChannel accessFileChannel;
 
     public Data(String path, int fileNo) throws IOException {
-        this.map = new MyLongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
+        this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
 
         //创建 key 的存储文件，并获取偏移量
         keyMappedFile = new MappedFile(path + File.separator + "KEY_" + fileNo);
@@ -67,13 +68,11 @@ public class Data {
     public void storeKV(byte[] key, byte[] value) throws EngineException {
         int newSubscript = subscript.addAndGet(1);
         appendValueAndKey(value, key, newSubscript);
-        //appendKey(key, (newSubscript - 1) << 3);
         put(ByteUtil.bytes2Long(key), newSubscript);
     }
 
     public synchronized byte[] readValue(int offset) throws EngineException {
         try {
-            readBuffer.clear();
             accessFileChannel.read(readBuffer, (long) (offset - 1) << 12);
             return readBuffer.array();
         } catch (IOException e) {
@@ -90,21 +89,13 @@ public class Data {
 
             keyBuffer.put(key);
             keyBuffer.flip();
-            keyFileChannel.write(keyBuffer, (long) (offset - 1) << 3);
+            keyFileChannel.write(keyBuffer, (offset - 1) << 3);
             keyBuffer.clear();
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
         }
     }
-
-    /*private void appendKey(byte[] key, int pos) throws EngineException {
-        try {
-            keyFileChannel.write(ByteBuffer.wrap(key), pos);
-        } catch (IOException e) {
-            throw new EngineException(RetCodeEnum.IO_ERROR, "write key IO exception!!!");
-        }
-    }*/
 
     private void put(long key, int offset) {
         map.put(key, offset);
@@ -114,7 +105,7 @@ public class Data {
         return map.get(key);
     }
 
-    public MyLongIntHashMap getMap() {
+    public LongIntHashMap getMap() {
         return map;
     }
 

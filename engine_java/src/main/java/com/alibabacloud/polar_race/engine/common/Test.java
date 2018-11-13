@@ -15,12 +15,15 @@ public class Test {
     public static void main(String[] args) throws IOException, EngineException {
         engineRace = new EngineRace();
         engineRace.open("/Users/wangshuo/polarDb/store/");
+        //engineRace.write(ByteUtil.long2Bytes(298792), makeValue((byte) 'q'));
+        byte[] read = engineRace.read(ByteUtil.long2Bytes(298792));
+        System.out.println(Arrays.equals(read, makeValue((byte)'q')));
+        engineRace.read(makeKey((byte) 'a'));
+
         /*for (Data data : engineRace.getDatas()) {
             System.out.println(data.getMap());
         }*/
-        //engineRace.write(makeKey((byte) '!'), makeValue((byte) '!'));
-        //engineRace.read(ByteUtil.toBytes("AEEA7FF2D71DC0B9"));
-
+        /*engineRace.write(makeKey((byte) '!'), makeValue((byte) '!'));
         engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
         engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
         engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
@@ -32,7 +35,12 @@ public class Test {
         read = engineRace.read(makeKey((byte) 'c'));
         System.out.println(Arrays.equals(read, makeValue((byte)'c')));
         read = engineRace.read(makeKey((byte) 'd'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'d')));
+        System.out.println(Arrays.equals(read, makeValue((byte)'d')));*/
+
+        /*byte[] read = engineRace.read(makeKey((byte) '!'));
+        System.out.println(Arrays.equals(read, makeValue((byte)'!')));
+        read = engineRace.read(makeKey((byte) 'x'));
+        System.out.println(Arrays.equals(read, makeValue((byte)'x')));*/
     }
 
     public void testUnsafe() {
