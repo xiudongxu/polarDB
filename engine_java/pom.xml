@@ -26,12 +26,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <!--<dependencies>
-        &lt;!&ndash; High Performance Primitive Collections for Java&ndash;&gt;
+    <dependencies>
+        <!-- High Performance Primitive Collections for Java-->
         <dependency>
             <groupId>com.carrotsearch</groupId>
             <artifactId>hppc</artifactId>
             <version>0.8.1</version>
         </dependency>
-    </dependencies>-->
+    </dependencies>
 </project>
