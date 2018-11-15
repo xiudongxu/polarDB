@@ -89,6 +89,9 @@ public class Data {
             unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);
             valueFileChannel.write(valueBuffer, pos);
         } catch (IOException e) {
+            System.out.println("write value IO exception!!!" + e.getMessage());
+            System.out.println("valueBuffer pos:" + valueBuffer.position());
+            System.out.println("valueBuffer limit:" + valueBuffer.limit());
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
         }
