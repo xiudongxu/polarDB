@@ -9,6 +9,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * 数据对存储相关
@@ -19,12 +21,14 @@ public class Data {
 
     private AtomicInteger subscript; //key/value 下标
     private LongIntHashMap map; //key -> offset map
+    private Unsafe unsafe = UnsafeUtil.getUnsafe();
 
     /**
      * value 文件
      */
     private MappedFile valueMappedFile;
     private FileChannel valueFileChannel;
+    private ByteBuffer valueBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
 
     /**
      * key 文件：首四字节存储偏移量，后面追加 key
@@ -79,9 +83,11 @@ public class Data {
         }
     }
 
-    private void appendValue(byte[] value, long pos) throws EngineException {
+    private synchronized void appendValue(byte[] value, long pos) throws EngineException {
         try {
-            valueFileChannel.write(ByteBuffer.wrap(value), pos);
+            long address = ((DirectBuffer) valueBuffer).address();
+            unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);
+            valueFileChannel.write(valueBuffer, pos);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
