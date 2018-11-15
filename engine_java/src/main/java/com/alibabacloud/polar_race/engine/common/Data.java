@@ -93,13 +93,7 @@ public class Data {
 
     private void appendKey(byte[] key, int pos) throws EngineException {
         try {
-            ByteBuffer buffer = ThreadContext.getBuffer(Constant.KEY);
-            buffer.clear();
-            long address = ((DirectBuffer) buffer).address();
-            unsafe.copyMemory(key, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.KEY_SIZE);
-            keyFileChannel.write(buffer, pos);
-
-            //keyFileChannel.write(ByteBuffer.wrap(key), pos);
+            keyFileChannel.write(ByteBuffer.wrap(key), pos);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "write key IO exception!!!");
         }
