@@ -23,16 +23,11 @@ public class Data {
     private LongIntHashMap map; //key -> offset map
     private Unsafe unsafe = UnsafeUtil.getUnsafe();
 
-    /**
-     * value 文件
-     */
+    /** value 文件 */
     private MappedFile valueMappedFile;
     private FileChannel valueFileChannel;
-    private ByteBuffer valueBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
 
-    /**
-     * key 文件：首四字节存储偏移量，后面追加 key
-     */
+    /** key 文件 */
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
 
@@ -83,12 +78,13 @@ public class Data {
         }
     }
 
-    private synchronized void appendValue(byte[] value, long pos) throws EngineException {
+    private void appendValue(byte[] value, long pos) throws EngineException {
         try {
-            valueBuffer.clear();
-            long address = ((DirectBuffer) valueBuffer).address();
+            ByteBuffer buffer = ThreadContext.getBuffer(Constant.VALUE);
+            buffer.clear();
+            long address = ((DirectBuffer) buffer).address();
             unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);
-            valueFileChannel.write(valueBuffer, pos);
+            valueFileChannel.write(buffer, pos);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
@@ -97,7 +93,13 @@ public class Data {
 
     private void appendKey(byte[] key, int pos) throws EngineException {
         try {
-            keyFileChannel.write(ByteBuffer.wrap(key), pos);
+            ByteBuffer buffer = ThreadContext.getBuffer(Constant.KEY);
+            buffer.clear();
+            long address = ((DirectBuffer) buffer).address();
+            unsafe.copyMemory(key, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.KEY_SIZE);
+            keyFileChannel.write(buffer, pos);
+
+            //keyFileChannel.write(ByteBuffer.wrap(key), pos);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "write key IO exception!!!");
         }
