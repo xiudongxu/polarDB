@@ -9,17 +9,10 @@ import java.nio.ByteBuffer;
  */
 public class ThreadContext {
 
+    private static ThreadLocal<ByteBuffer> context = ThreadLocal
+            .withInitial(() -> ByteBuffer.allocateDirect(Constant.VALUE_SIZE));
 
-    private static ThreadLocal<ByteBuffer> context = new ThreadLocal<>();
-
-    public static void setBuffer() {
-        ByteBuffer buffer = context.get();
-        if (buffer == null) {
-            context.set(ByteBuffer.allocateDirect(Constant.VALUE_SIZE));
-        }
-    }
-
-    public static ByteBuffer getBuffer(String type) throws EngineException {
+    public static ByteBuffer getBuffer() throws EngineException {
         return context.get();
     }
 }

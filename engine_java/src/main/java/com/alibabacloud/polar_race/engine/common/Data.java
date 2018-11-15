@@ -80,7 +80,7 @@ public class Data {
 
     private void appendValue(byte[] value, long pos) throws EngineException {
         try {
-            ByteBuffer buffer = ThreadContext.getBuffer(Constant.VALUE);
+            ByteBuffer buffer = ThreadContext.getBuffer();
             buffer.clear();
             long address = ((DirectBuffer) buffer).address();
             unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);

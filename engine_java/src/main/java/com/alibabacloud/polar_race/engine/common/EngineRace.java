@@ -26,7 +26,6 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void write(byte[] key, byte[] value) throws EngineException {
-        ThreadContext.setBuffer();
         long keyL = ByteUtil.bytes2Long(key);
         int modulus = (int) (keyL & (datas.length - 1));
         Data data = datas[modulus];
