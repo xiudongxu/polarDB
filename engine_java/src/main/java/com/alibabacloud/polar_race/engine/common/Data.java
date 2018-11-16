@@ -9,6 +9,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * 数据对存储相关
@@ -19,23 +21,19 @@ public class Data {
 
     private AtomicInteger subscript; //key/value 下标
     private LongIntHashMap map; //key -> offset map
+    private Unsafe unsafe = UnsafeUtil.getUnsafe();
 
-    /**
-     * value 文件
-     */
+    /** value 文件 */
     private MappedFile valueMappedFile;
     private FileChannel valueFileChannel;
-    private ByteBuffer valueBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
-    private ByteBuffer readBuffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
 
-    /**
-     * key 文件：首四字节存储偏移量，后面追加 key
-     */
+    /** key 文件 */
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
-    private ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.KEY_SIZE);
 
     private FileChannel accessFileChannel;
+    private ByteBuffer wirteBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
+    private ByteBuffer readBuffer  = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
 
     public Data(String path, int fileNo) throws IOException {
         this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
@@ -45,14 +43,14 @@ public class Data {
         keyFileChannel = keyMappedFile.getFileChannel();
         //加载 key
         int offset = 0;
-        ByteBuffer keysBuffer = ByteBuffer.allocateDirect(Constant.ONE_LOAD_SIZE);
-        while (keyFileChannel.read(keysBuffer) != -1) {
-            keysBuffer.flip();
-            while (keysBuffer.hasRemaining()) {
+        ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.ONE_LOAD_SIZE);
+        while (keyFileChannel.read(keyBuffer) != -1) {
+            keyBuffer.flip();
+            while (keyBuffer.hasRemaining()) {
                 offset++;
-                map.put(keysBuffer.getLong(), offset);
+                map.put(keyBuffer.getLong(), offset);
             }
-            keysBuffer.clear();
+            keyBuffer.clear();
         }
         subscript = new AtomicInteger(offset);
 
@@ -67,7 +65,8 @@ public class Data {
 
     public void storeKV(byte[] key, byte[] value) throws EngineException {
         int newSubscript = subscript.addAndGet(1);
-        appendValueAndKey(value, key, newSubscript);
+        appendValue(value, (long) (newSubscript - 1) << 12);
+        appendKey(key, (newSubscript - 1) << 3);
         put(ByteUtil.bytes2Long(key), newSubscript);
     }
 
@@ -76,26 +75,33 @@ public class Data {
             readBuffer.clear();
             accessFileChannel.read(readBuffer, (long) (offset - 1) << 12);
             readBuffer.flip();
-            return readBuffer.array();
+            byte[] bytes = new byte[Constant.VALUE_SIZE];
+            for (int i = 0; i < Constant.VALUE_SIZE; i++) {
+                bytes[i] = readBuffer.get();
+            }
+            return bytes;
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
         }
     }
 
-    private synchronized void appendValueAndKey(byte[] value, byte[] key, int offset) throws EngineException {
+    private synchronized void appendValue(byte[] value, long pos) throws EngineException {
         try {
-            valueBuffer.put(value);
-            valueBuffer.flip();
-            valueFileChannel.write(valueBuffer, (long) (offset - 1) << 12);
-            valueBuffer.clear();
-
-            keyBuffer.put(key);
-            keyBuffer.flip();
-            keyFileChannel.write(keyBuffer, (offset - 1) << 3);
-            keyBuffer.clear();
+            wirteBuffer.clear();
+            long address = ((DirectBuffer) wirteBuffer).address();
+            unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);
+            valueFileChannel.write(wirteBuffer, pos);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
+        }
+    }
+
+    private void appendKey(byte[] key, int pos) throws EngineException {
+        try {
+            keyFileChannel.write(ByteBuffer.wrap(key), pos);
+        } catch (IOException e) {
+            throw new EngineException(RetCodeEnum.IO_ERROR, "write key IO exception!!!");
         }
     }
 

@@ -15,19 +15,12 @@ public class Test {
     public static void main(String[] args) throws IOException, EngineException {
         engineRace = new EngineRace();
         engineRace.open("/Users/wangshuo/polarDb/store/");
-        //engineRace.write(ByteUtil.long2Bytes(298792), makeValue((byte) 'q'));
-        //byte[] read = engineRace.read(ByteUtil.long2Bytes(298792));
-        engineRace.write(makeKey((byte) '!'), makeValue((byte) '!'));
-        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
-        byte[] read = engineRace.read(makeKey((byte) 'a'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'a')));
-        engineRace.read(makeKey((byte) '!'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'!')));
-
         /*for (Data data : engineRace.getDatas()) {
             System.out.println(data.getMap());
         }*/
-        /*engineRace.write(makeKey((byte) '!'), makeValue((byte) '!'));
+        //engineRace.write(makeKey((byte) '!'), makeValue((byte) '!'));
+
+        //engineRace.read(ByteUtil.toBytes("AEEA7FF2D71DC0B9"));
         engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
         engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
         engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
@@ -39,17 +32,15 @@ public class Test {
         read = engineRace.read(makeKey((byte) 'c'));
         System.out.println(Arrays.equals(read, makeValue((byte)'c')));
         read = engineRace.read(makeKey((byte) 'd'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'d')));*/
+        System.out.println(Arrays.equals(read, makeValue((byte)'d')));
 
-        /*byte[] read = engineRace.read(makeKey((byte) '!'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'!')));
-        read = engineRace.read(makeKey((byte) 'x'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'x')));*/
+        /*ByteBuffer direct = ByteBuffer.allocateDirect(1);
+        long addresses = ((DirectBuffer) direct).address();*/
     }
 
-    public void testUnsafe() {
-        //Unsafe.getUnsafe()
-    }
+    //测试步骤
+    // 1.从0开始创建文件，读写正常
+    // 2.继续写入文件
 
     public static byte[] makeValue(byte b) {
         byte[] bytes = new byte[4096];
