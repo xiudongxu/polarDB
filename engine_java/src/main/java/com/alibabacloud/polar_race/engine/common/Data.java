@@ -33,7 +33,6 @@ public class Data {
 
     private FileChannel accessFileChannel;
     private ByteBuffer wirteBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
-    private ByteBuffer readBuffer  = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
 
     public Data(String path, int fileNo) throws IOException {
         this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
@@ -70,16 +69,11 @@ public class Data {
         put(ByteUtil.bytes2Long(key), newSubscript);
     }
 
-    public synchronized byte[] readValue(int offset) throws EngineException {
+    public  byte[] readValue(int offset) throws EngineException {
         try {
-            readBuffer.clear();
-            accessFileChannel.read(readBuffer, (long) (offset - 1) << 12);
-            readBuffer.flip();
-            byte[] bytes = new byte[Constant.VALUE_SIZE];
-            for (int i = 0; i < Constant.VALUE_SIZE; i++) {
-                bytes[i] = readBuffer.get();
-            }
-            return bytes;
+            ByteBuffer buffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
+            accessFileChannel.read(buffer, (long) (offset - 1) << 12);
+            return buffer.array();
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
         }
