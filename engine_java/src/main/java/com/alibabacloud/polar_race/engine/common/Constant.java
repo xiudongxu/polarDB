@@ -15,4 +15,6 @@ public interface Constant {
     short VALUE_SIZE = 4096;
 
     int ONE_LOAD_SIZE = 1024 * 1024 * 6; //一次加载的字节数  1024*1024
+
+    int KEY_MAPPED_SIZE = 16 * 1024 * 1024;
 }
