@@ -66,7 +66,7 @@ public class Data {
         //访问数据
         //accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r").getChannel();
         accessFileChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
-        writeValueChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "rw");
+        //writeValueChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "rw");
     }
 
     public void storeKV(byte[] key, byte[] value) throws EngineException {
@@ -98,8 +98,8 @@ public class Data {
             unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);
             valueFileChannel.write(wirteBuffer, pos);*/
 
-            writeValueChannel.seek(pos);
-            writeValueChannel.write(value);
+            accessFileChannel.seek(pos);
+            accessFileChannel.write(value);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
