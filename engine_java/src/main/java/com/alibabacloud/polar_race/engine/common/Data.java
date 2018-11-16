@@ -78,7 +78,7 @@ public class Data {
         put(ByteUtil.bytes2Long(key), newSubscript);
     }
 
-    public  byte[] readValue(int offset) throws EngineException {
+    public  synchronized byte[] readValue(int offset) throws EngineException {
         try {
             byte[] bytes = new byte[Constant.VALUE_SIZE];
             accessFileChannel.seek((long) (offset - 1) << 12);
