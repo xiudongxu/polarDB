@@ -3,17 +3,13 @@ package com.alibabacloud.polar_race.engine.common;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import com.carrotsearch.hppc.LongIntHashMap;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import net.smacke.jaydio.DirectRandomAccessFile;
 import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
 
 /**
  * 数据对存储相关
@@ -40,6 +36,7 @@ public class Data {
 
     //private FileChannel accessFileChannel;
     private DirectRandomAccessFile accessFileChannel;
+    private DirectRandomAccessFile writeValueChannel;
     private ByteBuffer wirteBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
     //private ByteBuffer readBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
 
@@ -69,6 +66,7 @@ public class Data {
         //访问数据
         //accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r").getChannel();
         accessFileChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+        writeValueChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "rw");
     }
 
     public void storeKV(byte[] key, byte[] value) throws EngineException {
@@ -95,10 +93,13 @@ public class Data {
 
     private synchronized void appendValue(byte[] value, long pos) throws EngineException {
         try {
-            wirteBuffer.clear();
+            /*wirteBuffer.clear();
             long address = ((DirectBuffer) wirteBuffer).address();
             unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);
-            valueFileChannel.write(wirteBuffer, pos);
+            valueFileChannel.write(wirteBuffer, pos);*/
+
+            writeValueChannel.seek(pos);
+            writeValueChannel.write(value);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
