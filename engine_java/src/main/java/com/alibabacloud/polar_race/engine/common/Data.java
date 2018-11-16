@@ -3,12 +3,15 @@ package com.alibabacloud.polar_race.engine.common;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import com.carrotsearch.hppc.LongIntHashMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import net.smacke.jaydio.DirectRandomAccessFile;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
@@ -23,16 +26,22 @@ public class Data {
     private LongIntHashMap map; //key -> offset map
     private Unsafe unsafe = UnsafeUtil.getUnsafe();
 
-    /** value 文件 */
+    /**
+     * value 文件
+     */
     private MappedFile valueMappedFile;
     private FileChannel valueFileChannel;
 
-    /** key 文件 */
+    /**
+     * key 文件
+     */
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
 
-    private FileChannel accessFileChannel;
+    //private FileChannel accessFileChannel;
+    private DirectRandomAccessFile accessFileChannel;
     private ByteBuffer wirteBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
+    //private ByteBuffer readBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
 
     public Data(String path, int fileNo) throws IOException {
         this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
@@ -58,8 +67,8 @@ public class Data {
         valueFileChannel = valueMappedFile.getFileChannel();
 
         //访问数据
-        accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r")
-                .getChannel();
+        //accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r").getChannel();
+        accessFileChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
     }
 
     public void storeKV(byte[] key, byte[] value) throws EngineException {
@@ -71,9 +80,12 @@ public class Data {
 
     public  byte[] readValue(int offset) throws EngineException {
         try {
-            ByteBuffer buffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
-            accessFileChannel.read(buffer, (long) (offset - 1) << 12);
-            return buffer.array();
+            byte[] bytes = new byte[Constant.VALUE_SIZE];
+            accessFileChannel.seek((long) (offset - 1) << 12);
+            accessFileChannel.read(bytes);
+            //accessFileChannel.read(buffre, (long) (offset - 1) << 12);
+            //unsafe.copyMemory(readBuffer, 0, null, UnsafeUtil.getAddr(bytes), Constant.VALUE_SIZE);
+            return bytes;
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
         }

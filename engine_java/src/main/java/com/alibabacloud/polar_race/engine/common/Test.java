@@ -14,7 +14,7 @@ public class Test {
 
     public static void main(String[] args) throws IOException, EngineException {
         engineRace = new EngineRace();
-        engineRace.open("/Users/wangshuo/polarDb/store/");
+        engineRace.open("/Users/xiudongxu/workspace/wsluck/store");
         /*for (Data data : engineRace.getDatas()) {
             System.out.println(data.getMap());
         }*/
