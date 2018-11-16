@@ -65,7 +65,7 @@ public class Data {
 
         //访问数据
         //accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r").getChannel();
-        accessFileChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+        accessFileChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "rw");
         //writeValueChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "rw");
     }
 
