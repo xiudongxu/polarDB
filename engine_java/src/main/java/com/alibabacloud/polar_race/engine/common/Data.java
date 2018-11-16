@@ -80,7 +80,7 @@ public class Data {
 
     public byte[] readValue(int offset) throws EngineException {
         try {
-            byte[] bytes = new byte[Constant.VALUE_SIZE];
+            byte[] bytes = ThreadContext.getBytes();
             synchronized (this){
                 accessFileChannel.seek((long) (offset - 1) << 12);
                 accessFileChannel.read(bytes);
