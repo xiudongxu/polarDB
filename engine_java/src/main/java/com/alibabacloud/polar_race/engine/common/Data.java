@@ -78,11 +78,13 @@ public class Data {
         put(ByteUtil.bytes2Long(key), newSubscript);
     }
 
-    public  synchronized byte[] readValue(int offset) throws EngineException {
+    public byte[] readValue(int offset) throws EngineException {
         try {
             byte[] bytes = new byte[Constant.VALUE_SIZE];
-            accessFileChannel.seek((long) (offset - 1) << 12);
-            accessFileChannel.read(bytes);
+            synchronized (this){
+                accessFileChannel.seek((long) (offset - 1) << 12);
+                accessFileChannel.read(bytes);
+            }
             //accessFileChannel.read(buffre, (long) (offset - 1) << 12);
             //unsafe.copyMemory(readBuffer, 0, null, UnsafeUtil.getAddr(bytes), Constant.VALUE_SIZE);
             return bytes;
