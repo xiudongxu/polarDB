@@ -11,6 +11,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import net.smacke.jaydio.DirectRandomAccessFile;
+import sun.misc.Contended;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
@@ -19,6 +20,7 @@ import sun.nio.ch.DirectBuffer;
  * 每个 Data 实例包含存储 key 和 value 的文件对，以及一个索引 map :
  * key -> offset 其中 key 为实际的 key，offset 为存储在 value 文件的偏移量
  */
+@Contended
 public class Data {
 
     private int subscript; //key/value 下标
