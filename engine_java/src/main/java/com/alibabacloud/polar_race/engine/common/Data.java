@@ -50,7 +50,7 @@ public class Data {
         //创建 key 的存储文件，并获取偏移量
         keyMappedFile = new MappedFile(path + File.separator + "KEY_" + fileNo);
         keyFileChannel = keyMappedFile.getFileChannel();
-        keyMapperByteBuffer = keyFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, Constant.KEY_MAPPED_SIZE);
+
         //加载 key
         int offset = 0;
         //创建 value 的存储文件，并设置其偏移量
@@ -65,6 +65,8 @@ public class Data {
             }
             keyBuffer.clear();
         }
+        //务必要后面进行映射 否则上面offet会不准
+        keyMapperByteBuffer = keyFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, Constant.KEY_MAPPED_SIZE);
         keyMapperByteBuffer.position(offset << 3);
         subscript = offset;
 
