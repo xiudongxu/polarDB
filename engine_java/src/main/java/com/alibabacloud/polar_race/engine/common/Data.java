@@ -3,17 +3,17 @@ package com.alibabacloud.polar_race.engine.common;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import com.carrotsearch.hppc.LongIntHashMap;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-
 import net.smacke.jaydio.DirectRandomAccessFile;
 import sun.misc.Contended;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 
 /**
  * 数据对存储相关
@@ -51,35 +51,43 @@ public class Data {
         keyMappedFile = new MappedFile(path + File.separator + "KEY_" + fileNo);
         keyFileChannel = keyMappedFile.getFileChannel();
 
-        //加载 key
-        int offset = 0;
         //创建 value 的存储文件，并设置其偏移量
         valueMappedFile = new MappedFile(path + File.separator + "VALUE_" + fileNo);
         valueFileChannel = valueMappedFile.getFileChannel();
-        ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.ONE_LOAD_SIZE);
-        while (keyFileChannel.read(keyBuffer) != -1) {
-            keyBuffer.flip();
-            while (keyBuffer.hasRemaining()) {
-                offset++;
-                map.put(keyBuffer.getLong(), offset);
-            }
-            keyBuffer.clear();
-        }
+        //计算写入了多少个key
+
+//        ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.ONE_LOAD_SIZE);
+//        while (keyFileChannel.read(keyBuffer) != -1) {
+//            keyBuffer.flip();
+//            while (keyBuffer.hasRemaining()) {
+//                offset++;
+//                map.put(keyBuffer.getLong(), offset);
+//            }
+//            keyBuffer.clear();
+//        }
         //务必要后面进行映射 否则上面offet会不准
         keyMapperByteBuffer = keyFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, Constant.KEY_MAPPED_SIZE);
-        keyMapperByteBuffer.position(offset << 3);
-        subscript = offset;
-
-
+        subscript = (int) (valueFileChannel.size() >> 12);
+        byte[] bytes = new byte[Constant.KEY_SIZE];
+        for (int i = 1; i <= subscript; i++) {
+            for (int j = 0; j < 8; j++) {
+                bytes[j] = keyMapperByteBuffer.get();
+            }
+            map.put(ByteUtil.bytes2Long(bytes), i);
+        }
+        //accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r").getChannel();
         accessFileChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
 
         address = ((DirectBuffer) wirteBuffer).address();
     }
 
-    public synchronized void storeKV(byte[] key, byte[] value) throws EngineException {
-        subscript++;
-        appendValue(value, (long) (subscript - 1) << 12);
-        appendKey(key);
+    public void storeKV(byte[] key, byte[] value) throws EngineException {
+        int newSubscript;
+        synchronized (this) {
+            newSubscript = ++subscript;
+            appendValue(value, (long) (newSubscript - 1) << 12);
+            appendKey(key);
+        }
         put(ByteUtil.bytes2Long(key), subscript);
     }
 
@@ -117,10 +125,6 @@ public class Data {
 
     public int get(long key) {
         return map.get(key);
-    }
-
-    public LongIntHashMap getMap() {
-        return map;
     }
 
     public void close() throws IOException {
