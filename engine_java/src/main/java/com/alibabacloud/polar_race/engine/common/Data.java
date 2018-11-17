@@ -108,7 +108,8 @@ public class Data {
         try {
             wirteBuffer.clear();
             unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);
-            valueFileChannel.write(wirteBuffer, pos);
+            valueFileChannel.position(pos);
+            valueFileChannel.write(wirteBuffer);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
