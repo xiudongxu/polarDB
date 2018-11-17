@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import net.smacke.jaydio.DirectRandomAccessFile;
 import sun.misc.Unsafe;
@@ -22,7 +21,7 @@ import sun.nio.ch.DirectBuffer;
  */
 public class Data {
 
-    private AtomicInteger subscript; //key/value 下标
+    private int subscript; //key/value 下标
     private LongIntHashMap map; //key -> offset map
     private Unsafe unsafe = UnsafeUtil.getUnsafe();
 
@@ -65,7 +64,7 @@ public class Data {
             keyBuffer.clear();
         }
         keyMapperByteBuffer.position(offset << 3);
-        subscript = new AtomicInteger(offset);
+        subscript = offset;
 
 
         accessFileChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
@@ -73,13 +72,11 @@ public class Data {
         address = ((DirectBuffer) wirteBuffer).address();
     }
 
-    public void storeKV(byte[] key, byte[] value) throws EngineException {
-        int newSubscript = subscript.addAndGet(1);
-        synchronized (this) {
-            appendValue(value, (long) (newSubscript - 1) << 12);
-            appendKey(key);
-        }
-        put(ByteUtil.bytes2Long(key), newSubscript);
+    public synchronized void storeKV(byte[] key, byte[] value) throws EngineException {
+        subscript++;
+        appendValue(value, (long) (subscript - 1) << 12);
+        appendKey(key);
+        put(ByteUtil.bytes2Long(key), subscript);
     }
 
     public byte[] readValue(int offset) throws EngineException {
@@ -106,7 +103,7 @@ public class Data {
         }
     }
 
-    private void appendKey(byte[] key){
+    private void appendKey(byte[] key) {
         keyMapperByteBuffer.put(key);
     }
 
