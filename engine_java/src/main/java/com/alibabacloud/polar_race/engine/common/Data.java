@@ -20,28 +20,30 @@ import java.nio.channels.FileChannel;
  * 每个 Data 实例包含存储 key 和 value 的文件对，以及一个索引 map :
  * key -> offset 其中 key 为实际的 key，offset 为存储在 value 文件的偏移量
  */
-@Contended
 public class Data {
 
+    @Contended
     private int subscript; //key/value 下标
+
+    private long address;
     private LongIntHashMap map; //key -> offset map
     private Unsafe unsafe = UnsafeUtil.getUnsafe();
-
     /**
      * value 文件
      */
     private MappedFile valueMappedFile;
     private FileChannel valueFileChannel;
-
     /**
      * key 文件
      */
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
+    @Contended
     private MappedByteBuffer keyMapperByteBuffer;
 
     private DirectRandomAccessFile accessFileChannel;
-    private long address;
+
+    @Contended
     private ByteBuffer wirteBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
 
     public Data(String path, int fileNo) throws IOException {
@@ -108,8 +110,7 @@ public class Data {
         try {
             wirteBuffer.clear();
             unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);
-            valueFileChannel.position(pos);
-            valueFileChannel.write(wirteBuffer);
+            valueFileChannel.write(wirteBuffer,pos);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
