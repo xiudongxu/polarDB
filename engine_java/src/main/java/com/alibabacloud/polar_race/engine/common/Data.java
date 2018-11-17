@@ -20,10 +20,16 @@ import java.nio.channels.FileChannel;
  * 每个 Data 实例包含存储 key 和 value 的文件对，以及一个索引 map :
  * key -> offset 其中 key 为实际的 key，offset 为存储在 value 文件的偏移量
  */
+@Contended
 public class Data {
 
-    @Contended
+    @Contended("1")
     private int subscript; //key/value 下标
+    @Contended("1")
+    private MappedByteBuffer keyMapperByteBuffer;
+    @Contended("1")
+    private ByteBuffer wirteBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
+
 
     private long address;
     private LongIntHashMap map; //key -> offset map
@@ -38,13 +44,9 @@ public class Data {
      */
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
-    @Contended
-    private MappedByteBuffer keyMapperByteBuffer;
+
 
     private DirectRandomAccessFile accessFileChannel;
-
-    @Contended
-    private ByteBuffer wirteBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
 
     public Data(String path, int fileNo) throws IOException {
         this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
@@ -56,18 +58,8 @@ public class Data {
         //创建 value 的存储文件，并设置其偏移量
         valueMappedFile = new MappedFile(path + File.separator + "VALUE_" + fileNo);
         valueFileChannel = valueMappedFile.getFileChannel();
-        //计算写入了多少个key
 
-//        ByteBuffer keyBuffer = ByteBuffer.allocateDirect(Constant.ONE_LOAD_SIZE);
-//        while (keyFileChannel.read(keyBuffer) != -1) {
-//            keyBuffer.flip();
-//            while (keyBuffer.hasRemaining()) {
-//                offset++;
-//                map.put(keyBuffer.getLong(), offset);
-//            }
-//            keyBuffer.clear();
-//        }
-        //务必要后面进行映射 否则上面offet会不准
+        //创建映射，根据value文件的size 计算共有多少个key
         keyMapperByteBuffer = keyFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, Constant.KEY_MAPPED_SIZE);
         subscript = (int) (valueFileChannel.size() >> 12);
         byte[] bytes = new byte[Constant.KEY_SIZE];
