@@ -64,7 +64,7 @@ public class Data {
             }
             keyBuffer.clear();
         }
-        keyMapperByteBuffer.position(offset << 12);
+        keyMapperByteBuffer.position(offset << 3);
         subscript = new AtomicInteger(offset);
 
 
@@ -107,9 +107,7 @@ public class Data {
     }
 
     private void appendKey(byte[] key){
-        for (int i = 0; i < key.length; i++) {
-            keyMapperByteBuffer.put(key[i]);
-        }
+        keyMapperByteBuffer.put(key);
     }
 
     private void put(long key, int offset) {
