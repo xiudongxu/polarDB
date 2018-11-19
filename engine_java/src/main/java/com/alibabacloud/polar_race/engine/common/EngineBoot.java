@@ -16,6 +16,7 @@ public class EngineBoot {
             new InitDataThread(i, path, datas, downLatch).start();
         }
         downLatch.await();
+        SortIndex.instance.sort();
         return datas;
     }
 

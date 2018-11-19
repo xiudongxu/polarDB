@@ -15,7 +15,6 @@ public class EngineRace extends AbstractEngine {
         if (!file.exists()) {
             file.mkdir();
         }
-
         try {
             datas = EngineBoot.initDataFile(path);
         } catch (InterruptedException e) {
@@ -45,7 +44,18 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
-        Arrays.equals(lower, upper); //比较两个byte的大小
+        int[] range = SortIndex.instance.range(ByteUtil.bytes2Long(lower), ByteUtil.bytes2Long(upper));
+        try {
+            for (int i = range[0]; i <= range[1]; i++) {
+                long key = SortIndex.instance.get(i);
+                int modulus = (int) (key & (datas.length - 1));
+                Data data = datas[modulus];
+                int offset = data.get(key);
+                visitor.visit(ByteUtil.long2Bytes(key),data.readValue(offset));
+            }
+        } catch (EngineException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

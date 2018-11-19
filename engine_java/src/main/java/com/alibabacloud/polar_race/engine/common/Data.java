@@ -62,34 +62,31 @@ public class Data {
         //创建映射，根据value文件的size 计算共有多少个key
         keyMapperByteBuffer = keyFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, Constant.KEY_MAPPED_SIZE);
         subscript = (int) (valueFileChannel.size() >> 12);
-        byte[] bytes = new byte[Constant.KEY_SIZE];
-        for (int i = 1; i <= subscript; i++) {
-            for (int j = 0; j < 8; j++) {
-                bytes[j] = keyMapperByteBuffer.get();
-            }
-            map.put(ByteUtil.bytes2Long(bytes), i);
+
+        for (int i = 0; i < subscript; i++) {
+            long aLong = keyMapperByteBuffer.getLong();
+            SortIndex.instance.set(aLong);
+            map.put(aLong, i);
         }
+
+        valueFileChannel.position((long) subscript << 12);
         //accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r").getChannel();
         accessFileChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
 
         address = ((DirectBuffer) wirteBuffer).address();
+
     }
 
-    public void storeKV(byte[] key, byte[] value) throws EngineException {
-        int newSubscript;
-        synchronized (this) {
-            newSubscript = ++subscript;
-            appendValue(value, (long) (newSubscript - 1) << 12);
-            appendKey(key);
-        }
-        put(ByteUtil.bytes2Long(key), subscript);
+    public synchronized void storeKV(byte[] key, byte[] value) throws EngineException {
+        appendValue(value);
+        appendKey(key);
     }
 
     public byte[] readValue(int offset) throws EngineException {
         try {
             byte[] bytes = ThreadContext.getBytes();
             synchronized (this) {
-                accessFileChannel.seek((long) (offset - 1) << 12);
+                accessFileChannel.seek((long) (offset) << 12);
                 accessFileChannel.read(bytes);
             }
             return bytes;
@@ -98,11 +95,11 @@ public class Data {
         }
     }
 
-    private void appendValue(byte[] value, long pos) throws EngineException {
+    private void appendValue(byte[] value) throws EngineException {
         try {
             wirteBuffer.clear();
             unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);
-            valueFileChannel.write(wirteBuffer,pos);
+            valueFileChannel.write(wirteBuffer);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
