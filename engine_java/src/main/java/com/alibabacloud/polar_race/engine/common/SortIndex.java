@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SortIndex {
 
     public static SortIndex instance = new SortIndex();
+
     private AtomicInteger atomicInteger;
     private long[] index;
 

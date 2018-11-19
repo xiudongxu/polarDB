@@ -72,9 +72,7 @@ public class Data {
         valueFileChannel.position((long) subscript << 12);
         //accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r").getChannel();
         accessFileChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
-
         address = ((DirectBuffer) wirteBuffer).address();
-
     }
 
     public synchronized void storeKV(byte[] key, byte[] value) throws EngineException {
