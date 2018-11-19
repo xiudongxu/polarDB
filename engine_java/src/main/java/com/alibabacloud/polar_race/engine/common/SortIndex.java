@@ -23,18 +23,29 @@ public class SortIndex {
         index[atomicInteger.getAndIncrement()] = key;
     }
 
-    public int[] range(long start,long end){
+    public int[] range(byte[] lower,byte[] upper){
         int[] ints = new int[2];
-        for (int i = 0; i < index.length; i++) {
-            if (index[i] == start){
-                ints[0] = i;
-            }
-            if (index[i] == end){
-                ints[1] = i;
-                break;
-            }
+        if(lower == null){
+            ints[0] = 0;
+        }
+        if(upper == null){
+            ints[1] = index.length - 1 ;
         }
         return ints;
+
+//        long start = ByteUtil.bytes2Long(lower);
+//        long end = ByteUtil.bytes2Long(upper);
+//
+//        for (int i = 0; i < index.length; i++) {
+//            if (index[i] == start){
+//                ints[0] = i;
+//            }
+//            if (index[i] == end){
+//                ints[1] = i;
+//                break;
+//            }
+//        }
+//        return ints;
     }
 
     public long get(int i){

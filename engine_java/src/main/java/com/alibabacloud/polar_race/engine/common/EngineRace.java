@@ -2,6 +2,7 @@ package com.alibabacloud.polar_race.engine.common;
 
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -44,14 +45,14 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
-        int[] range = SortIndex.instance.range(ByteUtil.bytes2Long(lower), ByteUtil.bytes2Long(upper));
+        int[] range = SortIndex.instance.range(lower, upper);
         try {
             for (int i = range[0]; i <= range[1]; i++) {
                 long key = SortIndex.instance.get(i);
                 int modulus = (int) (key & (datas.length - 1));
                 Data data = datas[modulus];
                 int offset = data.get(key);
-                visitor.visit(ByteUtil.long2Bytes(key),data.readValue(offset));
+                visitor.visit(ByteUtil.long2Bytes(key), data.readValue(offset));
             }
         } catch (EngineException e) {
             e.printStackTrace();
