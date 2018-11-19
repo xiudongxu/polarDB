@@ -63,8 +63,12 @@ public class Data {
         keyMapperByteBuffer = keyFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, Constant.KEY_MAPPED_SIZE);
         subscript = (int) (valueFileChannel.size() >> 12);
 
-        for (int i = 0; i < subscript; i++) {
-            long aLong = keyMapperByteBuffer.getLong();
+        byte[] bytes = new byte[Constant.KEY_SIZE];
+        for (int i = 1; i <= subscript; i++) {
+            for (int j = 0; j < 8; j++) {
+                bytes[j] = keyMapperByteBuffer.get();
+            }
+            long aLong = ByteUtil.bytes2Long(bytes);
             SortIndex.instance.set(aLong);
             map.put(aLong, i);
         }
@@ -80,19 +84,6 @@ public class Data {
         appendKey(key);
     }
 
-    public byte[] readValue(int offset) throws EngineException {
-        try {
-            byte[] bytes = ThreadContext.getBytes();
-            synchronized (this) {
-                accessFileChannel.seek((long) (offset) << 12);
-                accessFileChannel.read(bytes);
-            }
-            return bytes;
-        } catch (IOException e) {
-            throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
-        }
-    }
-
     private void appendValue(byte[] value) throws EngineException {
         try {
             wirteBuffer.clear();
@@ -106,6 +97,19 @@ public class Data {
 
     private void appendKey(byte[] key) {
         keyMapperByteBuffer.put(key);
+    }
+
+    public byte[] readValue(int offset) throws EngineException {
+        try {
+            byte[] bytes = ThreadContext.getBytes();
+            synchronized (this) {
+                accessFileChannel.seek((long) (offset - 1 ) << 12);
+                accessFileChannel.read(bytes);
+            }
+            return bytes;
+        } catch (IOException e) {
+            throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
+        }
     }
 
     private void put(long key, int offset) {
