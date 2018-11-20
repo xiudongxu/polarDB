@@ -17,6 +17,9 @@ public class SortIndex {
     private SortIndex(){
         this.atomicInteger = new AtomicInteger(0);
         index = new long[64000000];
+        for (int i = 0; i < index.length - 1; i++) {
+            index[i] = Long.MAX_VALUE;
+        }
     }
 
     public void set(long key){
