@@ -69,7 +69,12 @@ public class Data {
                 bytes[j] = keyMapperByteBuffer.get();
             }
             long aLong = ByteUtil.bytes2Long(bytes);
-            SortIndex.instance.set(aLong);
+            if (map.containsKey(aLong)) {
+                int index = SortIndex.instance.getIndex(aLong);
+                SortIndex.instance.set(aLong,index);
+            }else{
+                SortIndex.instance.set(aLong);
+            }
             map.put(aLong, i);
         }
 

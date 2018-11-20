@@ -26,6 +26,10 @@ public class SortIndex {
         index[atomicInteger.getAndIncrement()] = key;
     }
 
+    public void set(long key,int id){
+        index[id] = key;
+    }
+
     public int[] range(byte[] lower,byte[] upper) {
         int[] ints = new int[2];
         ints[0] = lower == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(lower));
@@ -38,6 +42,10 @@ public class SortIndex {
     }
     public void sort(){
         Arrays.sort(index);
+    }
+
+    public int getIndex(long key){
+        return binarySearch(index,key);
     }
 
     private static int binarySearch(long[] arr, long x) {
