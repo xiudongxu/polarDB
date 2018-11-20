@@ -17,6 +17,9 @@ public class EngineBoot {
         }
         downLatch.await();
         SortIndex.instance.sort();
+        for (int i = 0; i < 100; i++) {
+            System.out.println(SortIndex.instance.get(i));
+        }
         return datas;
     }
 

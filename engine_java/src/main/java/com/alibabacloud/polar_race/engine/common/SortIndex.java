@@ -23,29 +23,11 @@ public class SortIndex {
         index[atomicInteger.getAndIncrement()] = key;
     }
 
-    public int[] range(byte[] lower,byte[] upper){
+    public int[] range(byte[] lower,byte[] upper) {
         int[] ints = new int[2];
-        if(lower == null){
-            ints[0] = 0;
-        }
-        if(upper == null){
-            ints[1] = index.length - 1 ;
-        }
+        ints[0] = lower == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(lower));
+        ints[1] = upper == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(upper));
         return ints;
-
-//        long start = ByteUtil.bytes2Long(lower);
-//        long end = ByteUtil.bytes2Long(upper);
-//
-//        for (int i = 0; i < index.length; i++) {
-//            if (index[i] == start){
-//                ints[0] = i;
-//            }
-//            if (index[i] == end){
-//                ints[1] = i;
-//                break;
-//            }
-//        }
-//        return ints;
     }
 
     public long get(int i){
@@ -53,5 +35,22 @@ public class SortIndex {
     }
     public void sort(){
         Arrays.sort(index);
+    }
+
+    private static int binarySearch(long[] arr, long x) {
+        int low = 0;
+        int high = arr.length - 1;
+        int mid;
+        while (low <= high) {
+            mid = (low + high) / 2;
+            if (arr[mid] > x) {
+                high = mid - 1;
+            } else if (arr[mid] < x) {
+                low = mid + 1;
+            } else {
+                return mid;
+            }
+        }
+        return -1;
     }
 }
