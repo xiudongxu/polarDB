@@ -11,8 +11,8 @@ public class SortIndex {
 
     public static SortIndex instance = new SortIndex();
 
-    private AtomicInteger atomicInteger;
-    private long[] index;
+    private volatile AtomicInteger atomicInteger;
+    private volatile long[] index;
 
     private SortIndex(){
         this.atomicInteger = new AtomicInteger(0);
@@ -33,7 +33,7 @@ public class SortIndex {
     public int[] range(byte[] lower,byte[] upper) {
         int[] ints = new int[2];
         ints[0] = lower == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(lower));
-        ints[1] = upper == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(upper));
+        ints[1] = upper == null ? index.length-1 : binarySearch(index, ByteUtil.bytes2Long(upper));
         return ints;
     }
 

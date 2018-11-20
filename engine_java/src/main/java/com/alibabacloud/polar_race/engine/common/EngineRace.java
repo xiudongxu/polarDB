@@ -45,10 +45,16 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
+        System.out.println("lower:" + ByteUtil.bytes2Long(lower) + "uppper:" + ByteUtil.bytes2Long(upper));
         int[] range = SortIndex.instance.range(lower, upper);
         try {
+            long tmp = -1L;
             for (int i = range[0]; i <= range[1]; i++) {
                 long key = SortIndex.instance.get(i);
+                if (tmp == key) {
+                    continue;
+                }
+                tmp = key;
                 int modulus = (int) (key & (datas.length - 1));
                 Data data = datas[modulus];
                 int offset = data.get(key);
