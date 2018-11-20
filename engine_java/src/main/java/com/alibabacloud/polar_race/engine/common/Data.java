@@ -69,12 +69,7 @@ public class Data {
                 bytes[j] = keyMapperByteBuffer.get();
             }
             long aLong = ByteUtil.bytes2Long(bytes);
-            if (map.containsKey(aLong)) {
-                int index = SortIndex.instance.getIndex(aLong);
-                SortIndex.instance.set(aLong,index);
-            }else{
-                SortIndex.instance.set(aLong);
-            }
+            SortIndex.instance.set(aLong);
             map.put(aLong, i);
         }
 
@@ -108,7 +103,7 @@ public class Data {
         try {
             byte[] bytes = ThreadContext.getBytes();
             synchronized (this) {
-                accessFileChannel.seek((long) (offset - 1 ) << 12);
+                accessFileChannel.seek((long) (offset - 1) << 12);
                 accessFileChannel.read(bytes);
             }
             return bytes;

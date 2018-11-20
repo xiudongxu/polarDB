@@ -48,6 +48,16 @@ public class SortIndex {
         return binarySearch(index,key);
     }
 
+    public void removeDuplicate(){
+        long tmp = index[0];
+        for (int i = 1; i < index.length; i++) {
+            if(tmp == index[i]){
+                index[i] = Long.MAX_VALUE;
+            }else{
+                tmp = index[i];
+            }
+        }
+    }
     private static int binarySearch(long[] arr, long x) {
         int low = 0;
         int high = arr.length - 1;
