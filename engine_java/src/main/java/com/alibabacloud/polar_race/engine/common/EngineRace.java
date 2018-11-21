@@ -62,6 +62,7 @@ public class EngineRace extends AbstractEngine {
                 tmp = key;
                 //在这里停住
                 byte[] value = cache.get(key);
+
                 if(value == null){
                     synchronized (this){
                         byte[] bytes = cache.get(key);
@@ -75,14 +76,16 @@ public class EngineRace extends AbstractEngine {
                             }
                             cache.put(key,value);
                         }else{
-                            System.out.println(Thread.currentThread().getId() + "-命中缓存 - key:" +key);
+                            System.out.println(Thread.currentThread().getId() + "-加锁命中缓存 - key:" +key);
                             value = bytes;
                         }
                     }
                 }else{
-                    System.out.println(Thread.currentThread().getId() + "-命中缓存 - key:" +key);
+                    System.out.println(Thread.currentThread().getId() + "-直接命中缓存 - key:" +key);
                 }
-                visitor.visit(ByteUtil.long2Bytes(key), value);
+                byte[] value1 = new byte[Constant.VALUE_SIZE];
+                System.arraycopy(value1,0,value,0,Constant.VALUE_SIZE);
+                visitor.visit(ByteUtil.long2Bytes(key), value1);
             }
         } catch (EngineException e) {
             e.printStackTrace();
