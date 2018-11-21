@@ -2,14 +2,25 @@ package com.alibabacloud.polar_race.engine.common;
 
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
+import com.carrotsearch.hppc.LongIntHashMap;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.TreeMap;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class EngineRace extends AbstractEngine {
     private Data[] datas;
 
+    private TreeMap<Long,byte[]> cache = new TreeMap<>();
+    //private LinkedHashMap<Long,byte[]> cacheL = new LinkedHashMap<>();
     @Override
     public void open(String path) throws EngineException {
         File file = new File(path);
@@ -45,20 +56,38 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
-        System.out.println("lower:" + ByteUtil.bytes2Long(lower) + "uppper:" + ByteUtil.bytes2Long(upper));
-        int[] range = SortIndex.instance.range(lower, upper);
+        //单例的创建一个线程
         try {
+            int[] range = SortIndex.instance.range(lower, upper);
             long tmp = -1L;
             for (int i = range[0]; i <= range[1]; i++) {
                 long key = SortIndex.instance.get(i);
+                if(key == Long.MAX_VALUE){
+                    break;
+                }
                 if (tmp == key) {
                     continue;
                 }
                 tmp = key;
-                int modulus = (int) (key & (datas.length - 1));
-                Data data = datas[modulus];
-                int offset = data.get(key);
-                visitor.visit(ByteUtil.long2Bytes(key), data.readValue(offset));
+                //在这里停住
+                byte[] value = cache.get(key);
+                if(value == null){
+                    synchronized (this){
+                        if (cache.get(key) == null){
+                            int modulus = (int) (key & (datas.length - 1));
+                            Data data = datas[modulus];
+                            int offset = data.get(key);
+                            value =  data.readValue(offset);
+                            if(cache.size() == 1000){
+                                cache.remove(cache.firstKey());
+                            }
+                            cache.put(key,value);
+                        }else{
+                            value = cache.get(key);
+                        }
+                    }
+                }
+                visitor.visit(ByteUtil.long2Bytes(key), value);
             }
         } catch (EngineException e) {
             e.printStackTrace();
