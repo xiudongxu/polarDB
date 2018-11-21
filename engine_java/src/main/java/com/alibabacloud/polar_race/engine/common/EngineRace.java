@@ -2,19 +2,10 @@ package com.alibabacloud.polar_race.engine.common;
 
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
-import com.carrotsearch.hppc.LongIntHashMap;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.TreeMap;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class EngineRace extends AbstractEngine {
     private Data[] datas;
@@ -84,11 +75,12 @@ public class EngineRace extends AbstractEngine {
                             }
                             cache.put(key,value);
                         }else{
+                            System.out.println(Thread.currentThread().getId() + "-命中缓存 - key:" +key);
                             value = bytes;
                         }
                     }
                 }else{
-
+                    System.out.println(Thread.currentThread().getId() + "-命中缓存 - key:" +key);
                 }
                 visitor.visit(ByteUtil.long2Bytes(key), value);
             }
