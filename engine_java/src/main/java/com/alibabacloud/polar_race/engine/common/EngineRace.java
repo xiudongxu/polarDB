@@ -73,19 +73,22 @@ public class EngineRace extends AbstractEngine {
                 byte[] value = cache.get(key);
                 if(value == null){
                     synchronized (this){
-                        if (cache.get(key) == null){
+                        byte[] bytes = cache.get(key);
+                        if (bytes == null){
                             int modulus = (int) (key & (datas.length - 1));
                             Data data = datas[modulus];
                             int offset = data.get(key);
                             value =  data.readValue(offset);
-                            if(cache.size() == 1000){
+                            if(cache.size() == 128){
                                 cache.remove(cache.firstKey());
                             }
                             cache.put(key,value);
                         }else{
-                            value = cache.get(key);
+                            value = bytes;
                         }
                     }
+                }else{
+
                 }
                 visitor.visit(ByteUtil.long2Bytes(key), value);
             }
