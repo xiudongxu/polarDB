@@ -16,7 +16,10 @@ public class EngineBoot {
             new InitDataThread(i, path, datas, downLatch).start();
         }
         downLatch.await();
+        long begin = System.currentTimeMillis();
+        System.out.println("start sort time :" + begin);
         SortIndex.instance.sort();
+        System.out.println("sort cost time :" + (System.currentTimeMillis() - begin));
         return datas;
     }
 
