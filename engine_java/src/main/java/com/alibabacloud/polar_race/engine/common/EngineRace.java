@@ -76,12 +76,12 @@ public class EngineRace extends AbstractEngine {
                             }
                             cache.put(key,value);
                         }else{
-                            System.out.println(Thread.currentThread().getId() + "-加锁命中缓存 - key:" +key);
+                            System.out.println(Thread.currentThread().getName() + "-加锁命中缓存 - key:" +key);
                             value = bytes;
                         }
                     }
                 }else{
-                    System.out.println(Thread.currentThread().getId() + "-直接命中缓存 - key:" +key);
+                    System.out.println(Thread.currentThread().getName() + "-直接命中缓存 - key:" +key);
                 }
                 byte[] value1 = new byte[Constant.VALUE_SIZE];
                 System.arraycopy(value,0,value1,0,Constant.VALUE_SIZE);
