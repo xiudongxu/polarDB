@@ -19,5 +19,6 @@ public interface Constant {
 
     int KEY_MAPPED_SIZE = 12 * 1000000;
 
+    int THREAD_COUNT = 4;
 
 }

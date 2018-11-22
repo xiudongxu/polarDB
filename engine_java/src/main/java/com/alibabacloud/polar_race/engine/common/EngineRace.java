@@ -2,32 +2,28 @@ package com.alibabacloud.polar_race.engine.common;
 
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class EngineRace extends AbstractEngine {
 
     private Data[] datas;
-    private CacheData[] valueCache = new CacheData[64];
+    private CacheData[] valueCache = new CacheData[Constant.THREAD_COUNT];
     private AtomicInteger numberInc = new AtomicInteger(0);
 
-    private CyclicBarrier cyclicBarrier1 = new CyclicBarrier(64, new Runnable() {
+    private CyclicBarrier cyclicBarrier1 = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
             cyclicBarrier2.reset();
         }
     });
-    private CyclicBarrier cyclicBarrier2 = new CyclicBarrier(64, new Runnable() {
-        @Override
-        public void run() {
-            cyclicBarrier1.reset();
-        }
-    });
+
+    private CyclicBarrier cyclicBarrier2 = new CyclicBarrier(Constant.THREAD_COUNT,
+            () -> cyclicBarrier1.reset());
+
     @Override
     public void open(String path) throws EngineException {
         File file = new File(path);
@@ -64,10 +60,12 @@ public class EngineRace extends AbstractEngine {
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
         int number = numberInc.getAndIncrement();
+        number = number % Constant.THREAD_COUNT;
         try {
             int[] range = SortIndex.instance.range(lower, upper);
             long tmp = -1L;
-            for (int i = range[0] + number; i < range[1]; i+=64) {
+            for (int i = range[0] + number; i <= range[1]; i+= Constant.THREAD_COUNT) {
+
                 long key = SortIndex.instance.get(i);
                 if(key == Long.MAX_VALUE){
                     break;
@@ -76,12 +74,15 @@ public class EngineRace extends AbstractEngine {
                     continue;
                 }
                 tmp = key;
+
+
+
                 readAndSet(key,number);
                 cyclicBarrier1.await();
                 visit(visitor);
                 cyclicBarrier2.await();
             }
-        numberInc.getAndDecrement();
+        //numberInc.getAndDecrement();
         } catch (EngineException | InterruptedException | BrokenBarrierException e) {
             e.printStackTrace();
         }
