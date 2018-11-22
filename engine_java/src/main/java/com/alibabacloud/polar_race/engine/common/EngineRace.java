@@ -64,7 +64,6 @@ public class EngineRace extends AbstractEngine {
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
         int number = numberInc.getAndIncrement();
-        CountDownLatch countDownLatch = new CountDownLatch(64);
         try {
             int[] range = SortIndex.instance.range(lower, upper);
             long tmp = -1L;
@@ -82,9 +81,7 @@ public class EngineRace extends AbstractEngine {
                 visit(visitor);
                 cyclicBarrier2.await();
             }
-        countDownLatch.countDown();
         numberInc.getAndDecrement();
-        countDownLatch.await();
         } catch (EngineException | InterruptedException | BrokenBarrierException e) {
             e.printStackTrace();
         }
@@ -103,6 +100,7 @@ public class EngineRace extends AbstractEngine {
         byte[] bytes = data.readValue(offset);
         valueCache[number] = new CacheData(ByteUtil.long2Bytes(keyL),bytes);
     }
+
     @Override
     public void close() {
         try {
