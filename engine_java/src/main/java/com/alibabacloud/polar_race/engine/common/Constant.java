@@ -21,4 +21,5 @@ public interface Constant {
 
     int THREAD_COUNT = 4;
 
+    int CACHE_SIZE = 128;
 }

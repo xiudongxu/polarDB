@@ -16,8 +16,8 @@ public class SortIndex {
 
     private SortIndex(){
         this.atomicInteger = new AtomicInteger(0);
-        //index = new long[64000000];
-        index = new long[6400];
+        index = new long[Constant.TOTAL_KV_COUNT];
+        //index = new long[6400];
         for (int i = 0; i < index.length; i++) {
             index[i] = Long.MAX_VALUE;
         }
@@ -27,8 +27,11 @@ public class SortIndex {
         index[atomicInteger.getAndIncrement()] = key;
     }
 
-    public void set(long key,int id){
-        index[id] = key;
+    public long get(int i){
+        return index[i];
+    }
+    public void sort(){
+        Arrays.sort(index);
     }
 
     public int[] range(byte[] lower,byte[] upper) {
@@ -36,13 +39,6 @@ public class SortIndex {
         ints[0] = lower == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(lower));
         ints[1] = upper == null ? index.length-1 : binarySearch(index, ByteUtil.bytes2Long(upper));
         return ints;
-    }
-
-    public long get(int i){
-        return index[i];
-    }
-    public void sort(){
-        Arrays.sort(index);
     }
 
     public int getIndex(long key){

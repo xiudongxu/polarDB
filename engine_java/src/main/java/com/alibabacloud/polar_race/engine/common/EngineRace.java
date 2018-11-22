@@ -4,16 +4,15 @@ import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.TreeMap;
 
 public class EngineRace extends AbstractEngine {
 
     private Data[] datas;
-    private CacheData[] valueCache = new CacheData[Constant.THREAD_COUNT];
-    private AtomicInteger numberInc = new AtomicInteger(0);
+    private TreeMap<Long,byte[]> cache = new TreeMap<>();
 
+    /*private AtomicInteger numberInc = new AtomicInteger(0);
+    private CacheData[] valueCache = new CacheData[Constant.THREAD_COUNT];
     private CyclicBarrier cyclicBarrier1 = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
@@ -22,7 +21,7 @@ public class EngineRace extends AbstractEngine {
     });
 
     private CyclicBarrier cyclicBarrier2 = new CyclicBarrier(Constant.THREAD_COUNT,
-            () -> cyclicBarrier1.reset());
+            () -> cyclicBarrier1.reset());*/
 
     @Override
     public void open(String path) throws EngineException {
@@ -59,36 +58,38 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
-        int number = numberInc.getAndIncrement();
-        number = number % Constant.THREAD_COUNT;
-        try {
-            int[] range = SortIndex.instance.range(lower, upper);
-            long tmp = -1L;
-            for (int i = range[0] + number; i <= range[1]; i+= Constant.THREAD_COUNT) {
+        long tmp = -1L; // key 为 -1 和 Long.MAX_VALUE 不可能吗？
+        int[] range = SortIndex.instance.range(lower, upper);
+        for (int i = range[0]; i <= range[1]; i++) {
+            long key = SortIndex.instance.get(i);
+            if (key == Long.MAX_VALUE) break;
+            if (tmp == key) continue;
+            tmp = key;
 
-                long key = SortIndex.instance.get(i);
-                if(key == Long.MAX_VALUE){
-                    break;
+            byte[] value = cache.get(key);
+            if (value == null) {
+                synchronized (this) {
+                    value = cache.get(key);
+                    if (value == null) {
+                        int modulus = (int) (key & (datas.length - 1));
+                        Data data = datas[modulus];
+                        try {
+                            value = data.readValue(data.get(key));
+                        } catch (EngineException e) {
+                            System.out.println("during range : read value IO exception!!!");
+                        }
+                        if (cache.size() == Constant.CACHE_SIZE) {
+                            cache.remove(cache.firstKey());
+                        }
+                        cache.put(key, value);
+                    }
                 }
-                if (tmp == key) {
-                    continue;
-                }
-                tmp = key;
-
-
-
-                readAndSet(key,number);
-                cyclicBarrier1.await();
-                visit(visitor);
-                cyclicBarrier2.await();
             }
-        //numberInc.getAndDecrement();
-        } catch (EngineException | InterruptedException | BrokenBarrierException e) {
-            e.printStackTrace();
+            visitor.visit(ByteUtil.long2Bytes(key), value);
         }
     }
 
-    private void visit(AbstractVisitor visitor) {
+    /*private void visit(AbstractVisitor visitor) {
         for (int i = 0; i < valueCache.length; i++) {
             visitor.visit(valueCache[i].getKey(),valueCache[i].getValue());
         }
@@ -100,7 +101,7 @@ public class EngineRace extends AbstractEngine {
         int offset = data.get(keyL);
         byte[] bytes = data.readValue(offset);
         valueCache[number] = new CacheData(ByteUtil.long2Bytes(keyL),bytes);
-    }
+    }*/
 
     @Override
     public void close() {

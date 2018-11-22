@@ -32,10 +32,16 @@ public class Test {
         engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
         engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));
 
+        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
+        engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
+        engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
+        engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));
+
         engineRace.write(makeKey((byte) 'e'), makeValue((byte) 'e'));
         engineRace.write(makeKey((byte) 'f'), makeValue((byte) 'f'));
         engineRace.write(makeKey((byte) 'g'), makeValue((byte) 'g'));
         engineRace.write(makeKey((byte) 'h'), makeValue((byte) 'h'));
+
         /*byte[] read = engineRace.read(makeKey((byte) 'a'));
         System.out.println(Arrays.equals(read, makeValue((byte)'a')));
         read = engineRace.read(makeKey((byte) 'b'));
