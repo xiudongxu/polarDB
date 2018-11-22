@@ -51,7 +51,7 @@ public class EngineRace extends AbstractEngine {
         try {
             int[] range = SortIndex.instance.range(lower, upper);
             long tmp = -1L;
-            for (int i = range[0]; i <= range[1]; i++) {
+            for (int i = range[0]; i < range[1]; i++) {
                 long key = SortIndex.instance.get(i);
                 if(key == Long.MAX_VALUE){
                     break;
