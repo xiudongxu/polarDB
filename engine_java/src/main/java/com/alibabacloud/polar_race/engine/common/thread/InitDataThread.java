@@ -1,5 +1,6 @@
-package com.alibabacloud.polar_race.engine.common;
+package com.alibabacloud.polar_race.engine.common.thread;
 
+import com.alibabacloud.polar_race.engine.common.Data;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
