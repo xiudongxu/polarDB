@@ -62,12 +62,12 @@ public class EngineRace extends AbstractEngine {
                 tmp = key;
                 //在这里停住
                 byte[] value = cache.get(key);
-
                 if(value == null){
                     synchronized (this){
                         byte[] bytes = cache.get(key);
                         if (bytes == null){
-                            int modulus = (int) (key & (datas.length - 1));
+                            //int modulus = (int) (key & (datas.length - 1));
+                            int modulus = 0;
                             Data data = datas[modulus];
                             int offset = data.get(key);
                             value =  data.readValue(offset);
@@ -84,7 +84,7 @@ public class EngineRace extends AbstractEngine {
                     System.out.println(Thread.currentThread().getId() + "-直接命中缓存 - key:" +key);
                 }
                 byte[] value1 = new byte[Constant.VALUE_SIZE];
-                System.arraycopy(value1,0,value,0,Constant.VALUE_SIZE);
+                System.arraycopy(value,0,value1,0,Constant.VALUE_SIZE);
                 visitor.visit(ByteUtil.long2Bytes(key), value1);
             }
         } catch (EngineException e) {

@@ -47,6 +47,7 @@ public class Data {
 
 
     private DirectRandomAccessFile accessFileChannel;
+    //private FileChannel accessFileChannel;
 
     public Data(String path, int fileNo) throws IOException {
         this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
@@ -107,6 +108,10 @@ public class Data {
                 accessFileChannel.read(bytes);
             }
             return bytes;
+
+//            ByteBuffer buffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
+//            accessFileChannel.read(buffer,(long) (offset - 1) << 12);
+//            return buffer.array();
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
         }

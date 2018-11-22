@@ -19,24 +19,28 @@ public class Test {
     public static void main(String[] args) throws IOException, EngineException {
         engineRace = new EngineRace();
         engineRace.open("/Users/xiudongxu/workspace/wsluck/store");
+        VisitorImpl visitor = new VisitorImpl();
+        byte[] bytes1 = makeKey((byte) 'a');
+        byte[] bytes2 = makeKey((byte) 'd');
+        engineRace.range(bytes1,bytes2,visitor);
         /*for (Data data : engineRace.getDatas()) {
             System.out.println(data.getMap());
         }*/
         //engineRace.write(makeKey((byte) '!'), makeValue((byte) '!'));
 
         //engineRace.read(ByteUtil.toBytes("AEEA7FF2D71DC0B9"));
-        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
-        engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
-        engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
-        engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));
-        byte[] read = engineRace.read(makeKey((byte) 'a'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'a')));
-        read = engineRace.read(makeKey((byte) 'b'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'b')));
-        read = engineRace.read(makeKey((byte) 'c'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'c')));
-        read = engineRace.read(makeKey((byte) 'd'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'d')));
+//        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
+//        engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
+//        engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
+//        engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));
+//        byte[] read = engineRace.read(makeKey((byte) 'a'));
+//        System.out.println(Arrays.equals(read, makeValue((byte)'a')));
+//        read = engineRace.read(makeKey((byte) 'b'));
+//        System.out.println(Arrays.equals(read, makeValue((byte)'b')));
+//        read = engineRace.read(makeKey((byte) 'c'));
+//        System.out.println(Arrays.equals(read, makeValue((byte)'c')));
+//        read = engineRace.read(makeKey((byte) 'd'));
+//        System.out.println(Arrays.equals(read, makeValue((byte)'d')));
         /*ByteBuffer direct = ByteBuffer.allocateDirect(1);
         long addresses = ((DirectBuffer) direct).address();*/
     }
