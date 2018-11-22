@@ -5,13 +5,29 @@ import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.TreeMap;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class EngineRace extends AbstractEngine {
-    private Data[] datas;
 
-    private TreeMap<Long,byte[]> cache = new TreeMap<>();
-    //private LinkedHashMap<Long,byte[]> cacheL = new LinkedHashMap<>();
+    private Data[] datas;
+    private CacheData[] valueCache = new CacheData[64];
+    private AtomicInteger numberInc = new AtomicInteger(0);
+
+    private CyclicBarrier cyclicBarrier1 = new CyclicBarrier(64, new Runnable() {
+        @Override
+        public void run() {
+            cyclicBarrier2.reset();
+        }
+    });
+    private CyclicBarrier cyclicBarrier2 = new CyclicBarrier(64, new Runnable() {
+        @Override
+        public void run() {
+            cyclicBarrier1.reset();
+        }
+    });
     @Override
     public void open(String path) throws EngineException {
         File file = new File(path);
@@ -47,11 +63,12 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
-        //单例的创建一个线程
+        int number = numberInc.getAndIncrement();
+        CountDownLatch countDownLatch = new CountDownLatch(64);
         try {
             int[] range = SortIndex.instance.range(lower, upper);
             long tmp = -1L;
-            for (int i = range[0]; i < range[1]; i++) {
+            for (int i = range[0] + number; i < range[1]; i+=64) {
                 long key = SortIndex.instance.get(i);
                 if(key == Long.MAX_VALUE){
                     break;
@@ -60,38 +77,32 @@ public class EngineRace extends AbstractEngine {
                     continue;
                 }
                 tmp = key;
-                //在这里停住
-                byte[] value = cache.get(key);
-                if(value == null){
-                    synchronized (this){
-                        byte[] bytes = cache.get(key);
-                        if (bytes == null){
-                            //int modulus = (int) (key & (datas.length - 1));
-                            int modulus = 0;
-                            Data data = datas[modulus];
-                            int offset = data.get(key);
-                            value =  data.readValue(offset);
-                            if(cache.size() == 128){
-                                cache.remove(cache.firstKey());
-                            }
-                            cache.put(key,value);
-                        }else{
-                            System.out.println(Thread.currentThread().getName() + "-加锁命中缓存 - key:" +key);
-                            value = bytes;
-                        }
-                    }
-                }else{
-                    System.out.println(Thread.currentThread().getName() + "-直接命中缓存 - key:" +key);
-                }
-                byte[] value1 = new byte[Constant.VALUE_SIZE];
-                System.arraycopy(value,0,value1,0,Constant.VALUE_SIZE);
-                visitor.visit(ByteUtil.long2Bytes(key), value1);
+                readAndSet(key,number);
+                cyclicBarrier1.await();
+                visit(visitor);
+                cyclicBarrier2.await();
             }
-        } catch (EngineException e) {
+        countDownLatch.countDown();
+        numberInc.getAndDecrement();
+        countDownLatch.await();
+        } catch (EngineException | InterruptedException | BrokenBarrierException e) {
             e.printStackTrace();
         }
     }
 
+    private void visit(AbstractVisitor visitor) {
+        for (int i = 0; i < valueCache.length; i++) {
+            visitor.visit(valueCache[i].getKey(),valueCache[i].getValue());
+        }
+    }
+
+    public void readAndSet(long keyL,int number) throws EngineException {
+        int modulus = (int) (keyL & (datas.length - 1));
+        Data data = datas[modulus];
+        int offset = data.get(keyL);
+        byte[] bytes = data.readValue(offset);
+        valueCache[number] = new CacheData(ByteUtil.long2Bytes(keyL),bytes);
+    }
     @Override
     public void close() {
         try {

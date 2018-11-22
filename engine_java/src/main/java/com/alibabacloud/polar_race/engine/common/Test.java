@@ -22,6 +22,8 @@ public class Test {
         VisitorImpl visitor = new VisitorImpl();
         byte[] bytes1 = makeKey((byte) 'a');
         byte[] bytes2 = makeKey((byte) 'd');
+
+
         engineRace.range(bytes1,bytes2,visitor);
         /*for (Data data : engineRace.getDatas()) {
             System.out.println(data.getMap());
