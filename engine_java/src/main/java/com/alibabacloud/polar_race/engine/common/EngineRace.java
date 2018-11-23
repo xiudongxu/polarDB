@@ -15,8 +15,8 @@ public class EngineRace extends AbstractEngine {
     private CyclicBarrier cyclicBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
-            cachePool.setReadCursor(cachePool.getReadCursor() + Constant.CACHE_SIZE);
             synchronized (cachePool){
+                cachePool.setReadCursor(cachePool.getReadCursor() + Constant.CACHE_SIZE);
                 cachePool.notify();
             }
             readBarrier.reset();
@@ -26,8 +26,8 @@ public class EngineRace extends AbstractEngine {
     private CyclicBarrier readBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
-            if (cachePool.getReadCursor() >= cachePool.getLoadCursor()) {
-                synchronized (cachePool) {
+            synchronized (cachePool) {
+                if (cachePool.getReadCursor() >= cachePool.getLoadCursor()) {
                     try {
                         cachePool.wait();
                     } catch (InterruptedException e) {

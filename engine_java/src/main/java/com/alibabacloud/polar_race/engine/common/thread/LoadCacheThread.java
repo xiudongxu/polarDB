@@ -25,41 +25,38 @@ public class LoadCacheThread extends Thread {
 
     @Override
     public void run() {
-        while (true) {
-            int loadCursor = cachePool.getLoadCursor();
-            int readCursor = cachePool.getReadCursor();
-
-            if (Constant.TOTAL_CAP - (loadCursor - readCursor) <= 0) {
-                synchronized (cachePool) {
+        synchronized (cachePool) {
+            while (true) {
+                int loadCursor = cachePool.getLoadCursor();
+                if (Constant.TOTAL_CAP - (loadCursor - cachePool.getReadCursor()) <= 0) {
                     try {
                         cachePool.wait();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+                    continue;
                 }
-                continue;
-            }
 
-            int mapIndex = (loadCursor / Constant.CACHE_SIZE) & Constant.POOL_COUNT - 1;
-            maps[mapIndex].clear();
-            for (int i = loadCursor; i < loadCursor + Constant.CACHE_SIZE; i++) {
-                long key = SortIndex.instance.get(i);
-                if (key == Long.MAX_VALUE) {
-                    cachePool.setLoadCursor(i);
-                    return;
-                }
-                int modulus = (int) (key & (datas.length - 1));
-                Data data = datas[modulus];
+                int mapIndex = (loadCursor / Constant.CACHE_SIZE) & Constant.POOL_COUNT - 1;
+                maps[mapIndex].clear();
+                for (int i = loadCursor; i < loadCursor + Constant.CACHE_SIZE; i++) {
+                    long key = SortIndex.instance.get(i);
+                    if (key == Long.MAX_VALUE) {
+                        cachePool.setLoadCursor(i);
+                        return;
+                    }
 
-                try {
-                    byte[] bytes = data.readValue(data.get(key));
-                    maps[mapIndex].put(key, bytes);
-                } catch (EngineException e) {
-                    System.out.println("during load cache : read value IO exception!!!");
+                    try {
+                        int modulus = (int) (key & (datas.length - 1));
+                        Data data = datas[modulus];
+                        byte[] bytes = data.readValue(data.get(key));
+                        maps[mapIndex].put(key, bytes);
+                    } catch (EngineException e) {
+                        System.out.println("during load cache : read value IO exception!!!");
+                    }
                 }
-            }
-            cachePool.setLoadCursor(cachePool.getLoadCursor() + Constant.CACHE_SIZE);
-            synchronized (cachePool) {
+
+                cachePool.setLoadCursor(cachePool.getLoadCursor() + Constant.CACHE_SIZE);
                 cachePool.notify();
             }
         }
