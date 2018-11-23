@@ -27,9 +27,16 @@ public class EngineBoot {
         return datas;
     }
 
-    public static void loadCache(LongObjectHashMap<byte[]>[] maps, Data[] datas)
-            throws InterruptedException {
-        new LoadCacheThread(0, datas, maps).start();
+    public static CachePool initCachePool(Data[] datas) {
+        LongObjectHashMap<byte[]>[] maps = new LongObjectHashMap[Constant.POOL_COUNT];
+        for (int i = 0; i < Constant.POOL_COUNT; i++) {
+            maps[i] = new LongObjectHashMap<>(Constant.CACHE_SIZE);
+        }
+        return new CachePool(datas, 0, 0, maps);
+    }
+
+    public static void loadCache(CachePool cachePool) throws InterruptedException {
+        new LoadCacheThread(cachePool).start();
     }
 
     public static void closeDataFile(Data[] datas) throws IOException {

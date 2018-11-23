@@ -2,7 +2,6 @@ package com.alibabacloud.polar_race.engine.common;
 
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
-import com.carrotsearch.hppc.LongObjectHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.BrokenBarrierException;
@@ -11,26 +10,34 @@ import java.util.concurrent.CyclicBarrier;
 public class EngineRace extends AbstractEngine {
 
     private Data[] datas;
-    private LongObjectHashMap<byte[]>[] maps;
-    private CyclicBarrier barrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+    private CachePool cachePool;
+
+    private CyclicBarrier cyclicBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
-            maps.notify();
+            cachePool.setReadCursor(cachePool.getReadCursor() + Constant.CACHE_SIZE);
+            synchronized (cachePool){
+                cachePool.notify();
+            }
+            readBarrier.reset();
         }
     });
 
-    /*private TreeMap<Long,byte[]> cache = new TreeMap<>();
-    private AtomicInteger numberInc = new AtomicInteger(0);
-    private CacheData[] valueCache = new CacheData[Constant.THREAD_COUNT];
-    private CyclicBarrier cyclicBarrier1 = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+    private CyclicBarrier readBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
-            cyclicBarrier2.reset();
+            if (cachePool.getReadCursor() >= cachePool.getLoadCursor()) {
+                synchronized (cachePool) {
+                    try {
+                        cachePool.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            cyclicBarrier.reset();
         }
     });
-
-    private CyclicBarrier cyclicBarrier2 = new CyclicBarrier(Constant.THREAD_COUNT,
-            () -> cyclicBarrier1.reset());*/
 
     @Override
     public void open(String path) throws EngineException {
@@ -40,11 +47,8 @@ public class EngineRace extends AbstractEngine {
         }
         try {
             datas = EngineBoot.initDataFile(path);
-            maps = new LongObjectHashMap[Constant.POOL_COUNT];
-            for (int i = 0; i < Constant.POOL_COUNT; i++) {
-                maps[i] = new LongObjectHashMap<>(Constant.CACHE_SIZE);
-            }
-            EngineBoot.loadCache(maps, datas);
+            cachePool = EngineBoot.initCachePool(datas);
+            EngineBoot.loadCache(cachePool);
         } catch (InterruptedException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "init data file IO exception!!!");
         }
@@ -76,38 +80,29 @@ public class EngineRace extends AbstractEngine {
         int[] range = SortIndex.instance.range(lower, upper);
 
         for (int i = range[0]; i <= range[1]; i += Constant.CACHE_SIZE) {
-
             try {
-                barrier.await();
+                readBarrier.await();
             } catch (InterruptedException | BrokenBarrierException e) {
                 e.printStackTrace();
             }
 
             int mapIndex = (i / Constant.CACHE_SIZE) & Constant.POOL_COUNT - 1;
-            for (int j = i * Constant.CACHE_SIZE; j < (i + 1) * Constant.CACHE_SIZE; j++) {
-                long key = SortIndex.instance.get(i);
+            for (int j = i; j < i + Constant.CACHE_SIZE; j++) {
+                long key = SortIndex.instance.get(j);
                 if (key == Long.MAX_VALUE) break;
                 if (tmp == key) continue;
                 tmp = key;
-                byte[] value = maps[mapIndex].get(key);
+                byte[] value = cachePool.getMaps()[mapIndex].get(key);
                 visitor.visit(ByteUtil.long2Bytes(key), value);
+            }
+
+            try {
+                cyclicBarrier.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
+                e.printStackTrace();
             }
         }
     }
-
-    /*private void visit(AbstractVisitor visitor) {
-        for (int i = 0; i < valueCache.length; i++) {
-            visitor.visit(valueCache[i].getKey(),valueCache[i].getValue());
-        }
-    }
-
-    public void readAndSet(long keyL,int number) throws EngineException {
-        int modulus = (int) (keyL & (datas.length - 1));
-        Data data = datas[modulus];
-        int offset = data.get(keyL);
-        byte[] bytes = data.readValue(offset);
-        valueCache[number] = new CacheData(ByteUtil.long2Bytes(keyL),bytes);
-    }*/
 
     @Override
     public void close() {

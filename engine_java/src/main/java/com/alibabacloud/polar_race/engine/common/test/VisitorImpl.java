@@ -1,6 +1,7 @@
 package com.alibabacloud.polar_race.engine.common.test;
 
 import com.alibabacloud.polar_race.engine.common.AbstractVisitor;
+import com.alibabacloud.polar_race.engine.common.ByteUtil;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -17,7 +18,7 @@ public class VisitorImpl extends AbstractVisitor {
         byte[] prefixValue = new byte[8];
         System.arraycopy(value, 0, prefixValue, 0, 8);
 
-        System.out.println("thread name:" + Thread.currentThread().getName() + " " + Arrays
-                .equals(key, prefixValue) + integer.getAndIncrement());
+        System.out.println("thread name:" + Thread.currentThread().getName() + " key:" + ByteUtil
+                .bytes2Long(key) + " " + Arrays.equals(key, prefixValue) + " " + integer.getAndIncrement());
     }
 }

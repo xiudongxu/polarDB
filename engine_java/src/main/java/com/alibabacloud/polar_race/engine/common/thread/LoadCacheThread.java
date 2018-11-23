@@ -1,5 +1,6 @@
 package com.alibabacloud.polar_race.engine.common.thread;
 
+import com.alibabacloud.polar_race.engine.common.CachePool;
 import com.alibabacloud.polar_race.engine.common.Constant;
 import com.alibabacloud.polar_race.engine.common.Data;
 import com.alibabacloud.polar_race.engine.common.SortIndex;
@@ -12,23 +13,41 @@ import com.carrotsearch.hppc.LongObjectHashMap;
  */
 public class LoadCacheThread extends Thread {
 
-    private int cursor; //sortIndex 的游标
     private Data[] datas;
-    private LongObjectHashMap<byte[]>[] maps; //缓存数组，为了读写分离
+    private CachePool cachePool;
+    private final LongObjectHashMap<byte[]>[] maps; //缓存数组，为了读写分离
 
-    public LoadCacheThread(int cursor, Data[] datas, LongObjectHashMap<byte[]>[] maps) {
-        this.cursor = cursor;
-        this.datas = datas;
-        this.maps = maps;
+    public LoadCacheThread(CachePool cachePool) {
+        this.cachePool = cachePool;
+        this.maps = cachePool.getMaps();
+        this.datas = cachePool.getDatas();
     }
 
     @Override
     public void run() {
         while (true) {
-            if (cursor >= Constant.TOTAL_KV_COUNT) break;
-            int mapIndex = (cursor / Constant.CACHE_SIZE) & Constant.POOL_COUNT - 1;
-            for (int i = cursor; i < cursor + Constant.CACHE_SIZE; i++) {
+            int loadCursor = cachePool.getLoadCursor();
+            int readCursor = cachePool.getReadCursor();
+
+            if (Constant.TOTAL_CAP - (loadCursor - readCursor) <= 0) {
+                synchronized (cachePool) {
+                    try {
+                        cachePool.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                continue;
+            }
+
+            int mapIndex = (loadCursor / Constant.CACHE_SIZE) & Constant.POOL_COUNT - 1;
+            maps[mapIndex].clear();
+            for (int i = loadCursor; i < loadCursor + Constant.CACHE_SIZE; i++) {
                 long key = SortIndex.instance.get(i);
+                if (key == Long.MAX_VALUE) {
+                    cachePool.setLoadCursor(i);
+                    return;
+                }
                 int modulus = (int) (key & (datas.length - 1));
                 Data data = datas[modulus];
 
@@ -39,10 +58,9 @@ public class LoadCacheThread extends Thread {
                     System.out.println("during load cache : read value IO exception!!!");
                 }
             }
-            try {
-                maps.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            cachePool.setLoadCursor(cachePool.getLoadCursor() + Constant.CACHE_SIZE);
+            synchronized (cachePool) {
+                cachePool.notify();
             }
         }
     }
