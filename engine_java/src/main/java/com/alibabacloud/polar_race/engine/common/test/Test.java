@@ -25,6 +25,9 @@ public class Test {
         for (int i = 0; i < Constant.THREAD_COUNT; i++) {
             new RangeThread(engineRace, visitor).start();
         }
+
+        int activeCount = Thread.activeCount();
+        System.out.println(activeCount);
     }
 
     public static void write(EngineRace engineRace) throws EngineException {

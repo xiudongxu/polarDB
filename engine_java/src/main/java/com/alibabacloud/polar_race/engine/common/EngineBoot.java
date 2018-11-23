@@ -31,10 +31,11 @@ public class EngineBoot {
 
     public static LongObjectHashMap<byte[]>[] initCacheMap(Data[] datas, Semaphore semaphore,
             CyclicBarrier barrier) {
-        LongObjectHashMap<byte[]>[] maps = new LongObjectHashMap[Constant.POOL_COUNT];
-        for (int i = 0; i < Constant.POOL_COUNT; i++) {
+        LongObjectHashMap<byte[]>[] maps = new LongObjectHashMap[Constant.THREAD_COUNT];
+        CountDownLatch downLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
+        for (int i = 0; i < Constant.THREAD_COUNT; i++) {
             maps[i] = new LongObjectHashMap<>(Constant.CACHE_SIZE);
-            new LoadCacheThread(datas, i, semaphore, barrier, maps[i]).start();
+            new LoadCacheThread(datas, i, semaphore, barrier, maps[i], downLatch).start();
         }
         return maps;
     }

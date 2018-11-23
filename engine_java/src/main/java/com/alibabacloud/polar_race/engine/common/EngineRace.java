@@ -13,6 +13,7 @@ public class EngineRace extends AbstractEngine {
 
     private Data[] datas;
     private LongObjectHashMap<byte[]>[] maps;
+    private boolean firstRead = true;
 
     private Semaphore readSemaphore = new Semaphore(Constant.THREAD_COUNT);
     private Semaphore loadSemaphore = new Semaphore(Constant.THREAD_COUNT);
@@ -20,16 +21,19 @@ public class EngineRace extends AbstractEngine {
     private CyclicBarrier loadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
-            if (readSemaphore.availablePermits() == 0) {
+            readBarrier.reset();
+            if (!firstRead && readSemaphore.availablePermits() == 0) {
                 readSemaphore.release(Constant.THREAD_COUNT);
             }
-            readBarrier.reset();
+            if (firstRead) {
+                firstRead = false;
+            }
         }
     });
 
     private CyclicBarrier readBarrier = new CyclicBarrier(Constant.THREAD_COUNT, () -> {
-        loadSemaphore.release(Constant.THREAD_COUNT);
         loadBarrier.reset();
+        loadSemaphore.release(Constant.THREAD_COUNT);
     });
 
     @Override
@@ -70,14 +74,18 @@ public class EngineRace extends AbstractEngine {
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
         long tmp = -1L; // key 为 -1 和 Long.MAX_VALUE 不可能吗？
         int[] range = SortIndex.instance.range(lower, upper);
-        for (int i = range[0]; i <= range[1]; i += Constant.CACHE_SIZE) {
+        for (int i = range[0]; i <= range[1]; i += (Constant.THREAD_COUNT * Constant.CACHE_SIZE)) {
+            if (i >= Constant.TOTAL_KV_COUNT) return;
             try {
                 readSemaphore.acquire();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            for (int j = i; j < i + Constant.THREAD_COUNT * Constant.CACHE_SIZE; j++) {
-                long key = SortIndex.instance.get(i);
+            int tmpEnd = i + Constant.THREAD_COUNT * Constant.CACHE_SIZE;
+            int endIndex = Constant.TOTAL_KV_COUNT > tmpEnd ? tmpEnd : Constant.TOTAL_KV_COUNT;
+
+            for (int j = i; j < endIndex; j++) {
+                long key = SortIndex.instance.get(j);
                 if (key == Long.MAX_VALUE) {
                     break;
                 }
@@ -89,6 +97,7 @@ public class EngineRace extends AbstractEngine {
                 byte[] value = maps[cacheIndex].get(key);
                 visitor.visit(ByteUtil.long2Bytes(key), value);
             }
+
             try {
                 readBarrier.await();
             } catch (InterruptedException | BrokenBarrierException e) {
