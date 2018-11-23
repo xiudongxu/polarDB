@@ -2,41 +2,34 @@ package com.alibabacloud.polar_race.engine.common;
 
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
+import com.carrotsearch.hppc.LongObjectHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Semaphore;
 
 public class EngineRace extends AbstractEngine {
 
     private Data[] datas;
-    private CachePool cachePool;
+    private LongObjectHashMap<byte[]>[] maps;
 
-    private CyclicBarrier cyclicBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+    private Semaphore readSemaphore = new Semaphore(Constant.THREAD_COUNT);
+    private Semaphore loadSemaphore = new Semaphore(Constant.THREAD_COUNT);
+
+    private CyclicBarrier loadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
-            synchronized (cachePool){
-                cachePool.setReadCursor(cachePool.getReadCursor() + Constant.CACHE_SIZE);
-                cachePool.notify();
+            if (readSemaphore.availablePermits() == 0) {
+                readSemaphore.release(Constant.THREAD_COUNT);
             }
             readBarrier.reset();
         }
     });
 
-    private CyclicBarrier readBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
-        @Override
-        public void run() {
-            synchronized (cachePool) {
-                if (cachePool.getReadCursor() >= cachePool.getLoadCursor()) {
-                    try {
-                        cachePool.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            cyclicBarrier.reset();
-        }
+    private CyclicBarrier readBarrier = new CyclicBarrier(Constant.THREAD_COUNT, () -> {
+        loadSemaphore.release(Constant.THREAD_COUNT);
+        loadBarrier.reset();
     });
 
     @Override
@@ -47,8 +40,7 @@ public class EngineRace extends AbstractEngine {
         }
         try {
             datas = EngineBoot.initDataFile(path);
-            cachePool = EngineBoot.initCachePool(datas);
-            EngineBoot.loadCache(cachePool);
+            maps = EngineBoot.initCacheMap(datas, loadSemaphore, loadBarrier);
         } catch (InterruptedException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "init data file IO exception!!!");
         }
@@ -78,26 +70,27 @@ public class EngineRace extends AbstractEngine {
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
         long tmp = -1L; // key 为 -1 和 Long.MAX_VALUE 不可能吗？
         int[] range = SortIndex.instance.range(lower, upper);
-
         for (int i = range[0]; i <= range[1]; i += Constant.CACHE_SIZE) {
             try {
-                readBarrier.await();
-            } catch (InterruptedException | BrokenBarrierException e) {
+                readSemaphore.acquire();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
-            int mapIndex = (i / Constant.CACHE_SIZE) & Constant.POOL_COUNT - 1;
-            for (int j = i; j < i + Constant.CACHE_SIZE; j++) {
-                long key = SortIndex.instance.get(j);
-                if (key == Long.MAX_VALUE) break;
-                if (tmp == key) continue;
+            for (int j = i; j < i + Constant.THREAD_COUNT * Constant.CACHE_SIZE; j++) {
+                long key = SortIndex.instance.get(i);
+                if (key == Long.MAX_VALUE) {
+                    break;
+                }
+                if (tmp == key) {
+                    continue;
+                }
                 tmp = key;
-                byte[] value = cachePool.getMaps()[mapIndex].get(key);
+                int cacheIndex = (j / Constant.CACHE_SIZE) & (Constant.THREAD_COUNT - 1);
+                byte[] value = maps[cacheIndex].get(key);
                 visitor.visit(ByteUtil.long2Bytes(key), value);
             }
-
             try {
-                cyclicBarrier.await();
+                readBarrier.await();
             } catch (InterruptedException | BrokenBarrierException e) {
                 e.printStackTrace();
             }
