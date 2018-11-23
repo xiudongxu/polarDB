@@ -34,30 +34,6 @@ public class Test {
             engineRace.write(key, makeValue(key));
             tmp += 1;
         }
-
-        /*engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
-        engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
-        engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
-        engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));
-
-        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
-        engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
-        engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
-        engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));
-
-        engineRace.write(makeKey((byte) 'e'), makeValue((byte) 'e'));
-        engineRace.write(makeKey((byte) 'f'), makeValue((byte) 'f'));
-        engineRace.write(makeKey((byte) 'g'), makeValue((byte) 'g'));
-        engineRace.write(makeKey((byte) 'h'), makeValue((byte) 'h'));*/
-
-        /*byte[] read = engineRace.read(makeKey((byte) 'a'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'a')));
-        read = engineRace.read(makeKey((byte) 'b'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'b')));
-        read = engineRace.read(makeKey((byte) 'c'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'c')));
-        read = engineRace.read(makeKey((byte) 'd'));
-        System.out.println(Arrays.equals(read, makeValue((byte)'d')));*/
     }
 
     public static byte[] makeValue(byte[] key) {
@@ -67,12 +43,4 @@ public class Test {
         }
         return bytes;
     }
-
-    /*public static byte[] makeKey(byte b) {
-        byte[] bytes = new byte[8];
-        for (int i = 0; i < bytes.length; i++) {
-            bytes[i] = b;
-        }
-        return bytes;
-    }*/
 }
