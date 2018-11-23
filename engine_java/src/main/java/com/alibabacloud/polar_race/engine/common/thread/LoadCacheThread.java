@@ -11,6 +11,8 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
 
 /**
+ * 有些线程没有停掉，会一直阻塞，没有想到好的方法
+ *
  * @author wangshuo
  * @version 2018-11-23
  */
