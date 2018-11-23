@@ -1,6 +1,7 @@
 package com.alibabacloud.polar_race.engine.common.test;
 
 import com.alibabacloud.polar_race.engine.common.AbstractVisitor;
+import com.alibabacloud.polar_race.engine.common.ByteUtil;
 import com.alibabacloud.polar_race.engine.common.Constant;
 import com.alibabacloud.polar_race.engine.common.EngineRace;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
@@ -27,7 +28,14 @@ public class Test {
     }
 
     public static void write(EngineRace engineRace) throws EngineException {
-        engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
+        long tmp = 0;
+        for (int i = 0; i < Constant.TOTAL_KV_COUNT; i++) {
+            byte[] key = ByteUtil.long2Bytes(tmp);
+            engineRace.write(key, makeValue(key));
+            tmp += 1;
+        }
+
+        /*engineRace.write(makeKey((byte) 'a'), makeValue((byte) 'a'));
         engineRace.write(makeKey((byte) 'b'), makeValue((byte) 'b'));
         engineRace.write(makeKey((byte) 'c'), makeValue((byte) 'c'));
         engineRace.write(makeKey((byte) 'd'), makeValue((byte) 'd'));
@@ -40,7 +48,7 @@ public class Test {
         engineRace.write(makeKey((byte) 'e'), makeValue((byte) 'e'));
         engineRace.write(makeKey((byte) 'f'), makeValue((byte) 'f'));
         engineRace.write(makeKey((byte) 'g'), makeValue((byte) 'g'));
-        engineRace.write(makeKey((byte) 'h'), makeValue((byte) 'h'));
+        engineRace.write(makeKey((byte) 'h'), makeValue((byte) 'h'));*/
 
         /*byte[] read = engineRace.read(makeKey((byte) 'a'));
         System.out.println(Arrays.equals(read, makeValue((byte)'a')));
@@ -52,19 +60,19 @@ public class Test {
         System.out.println(Arrays.equals(read, makeValue((byte)'d')));*/
     }
 
-    public static byte[] makeValue(byte b) {
+    public static byte[] makeValue(byte[] key) {
         byte[] bytes = new byte[4096];
-        for (int i = 0; i < bytes.length; i++) {
-            bytes[i] = b;
+        for (int i = 0; i < bytes.length; i += key.length) {
+            System.arraycopy(key, 0, bytes, i, key.length);
         }
         return bytes;
     }
 
-    public static byte[] makeKey(byte b) {
+    /*public static byte[] makeKey(byte b) {
         byte[] bytes = new byte[8];
         for (int i = 0; i < bytes.length; i++) {
             bytes[i] = b;
         }
         return bytes;
-    }
+    }*/
 }

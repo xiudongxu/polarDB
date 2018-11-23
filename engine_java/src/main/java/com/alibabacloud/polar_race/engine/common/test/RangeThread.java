@@ -1,6 +1,8 @@
 package com.alibabacloud.polar_race.engine.common.test;
 
 import com.alibabacloud.polar_race.engine.common.AbstractVisitor;
+import com.alibabacloud.polar_race.engine.common.ByteUtil;
+import com.alibabacloud.polar_race.engine.common.Constant;
 import com.alibabacloud.polar_race.engine.common.EngineRace;
 
 /**
@@ -19,8 +21,10 @@ public class RangeThread extends Thread {
 
     @Override
     public void run() {
-        byte[] lower = Test.makeKey((byte) 'a');
-        byte[] upper = Test.makeKey((byte) 'h');
+        long tmp = 0;
+        byte[] lower = ByteUtil.long2Bytes(tmp);
+        tmp += Constant.TOTAL_KV_COUNT - 1;
+        byte[] upper = ByteUtil.long2Bytes(tmp);
         engineRace.range(lower, upper, visitor);
     }
 }

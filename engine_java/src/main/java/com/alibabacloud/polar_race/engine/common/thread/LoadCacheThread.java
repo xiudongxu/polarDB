@@ -39,6 +39,7 @@ public class LoadCacheThread extends Thread {
 
                 int mapIndex = (loadCursor / Constant.CACHE_SIZE) & Constant.POOL_COUNT - 1;
                 maps[mapIndex].clear();
+                if (loadCursor >= Constant.TOTAL_KV_COUNT) return;
                 for (int i = loadCursor; i < loadCursor + Constant.CACHE_SIZE; i++) {
                     long key = SortIndex.instance.get(i);
                     if (key == Long.MAX_VALUE) {
