@@ -22,12 +22,32 @@ public class Test {
 
         //write(engineRace);
 
-        for (int i = 0; i < Constant.THREAD_COUNT; i++) {
-            new RangeThread(engineRace, visitor).start();
+        long begin = System.currentTimeMillis();
+        RangeData rangeData = new RangeData(visitor);
+        rangeData.start();
+
+        try {
+            rangeData.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("cost time:" + (System.currentTimeMillis() - begin));
+    }
+
+    static class RangeData extends Thread {
+
+        private AbstractVisitor visitor;
+
+        public RangeData(AbstractVisitor visitor) {
+            this.visitor = visitor;
         }
 
-        int activeCount = Thread.activeCount();
-        System.out.println(activeCount);
+        @Override
+        public void run() {
+            for (int i = 0; i < Constant.THREAD_COUNT; i++) {
+                new RangeThread(engineRace, visitor).start();
+            }
+        }
     }
 
     public static void write(EngineRace engineRace) throws EngineException {

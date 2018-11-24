@@ -17,8 +17,9 @@ public class VisitorImpl extends AbstractVisitor {
     public void visit(byte[] key, byte[] value) {
         byte[] prefixValue = new byte[8];
         System.arraycopy(value, 0, prefixValue, 0, 8);
-
-        System.out.println("thread name:" + Thread.currentThread().getName() + " key:" + ByteUtil
-                .bytes2Long(key) + " " + Arrays.equals(key, prefixValue) + " " + integer.getAndIncrement());
+        if (!Arrays.equals(key, prefixValue)) {
+            System.out.println("key:" + ByteUtil.bytes2Long(key) + " not match value");
+        }
+        //System.out.println("thread name:" + Thread.currentThread().getName() + " key:" + ByteUtil.bytes2Long(key) + " " + Arrays.equals(key, prefixValue) + " " + integer.getAndIncrement());
     }
 }
