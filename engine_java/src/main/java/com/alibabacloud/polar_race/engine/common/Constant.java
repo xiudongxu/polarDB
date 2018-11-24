@@ -25,4 +25,6 @@ public interface Constant {
     int CACHE_SIZE = 20;
 
     int TOTAL_CACHE_COUNT = THREAD_COUNT * CACHE_SIZE;
+
+    int CACHE_CAP = THREAD_COUNT * CACHE_SIZE * 2;
 }
