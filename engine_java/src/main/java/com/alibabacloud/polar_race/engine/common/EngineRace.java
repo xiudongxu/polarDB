@@ -1,5 +1,6 @@
 package com.alibabacloud.polar_race.engine.common;
 
+import com.alibabacloud.polar_race.engine.common.cache.CachePool;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import com.carrotsearch.hppc.LongObjectHashMap;
@@ -12,6 +13,8 @@ import java.util.concurrent.Semaphore;
 public class EngineRace extends AbstractEngine {
 
     private Data[] datas;
+    private CachePool cachePool;
+
     private LongObjectHashMap<byte[]>[] maps;
     private boolean firstRead = true;
 
@@ -22,11 +25,9 @@ public class EngineRace extends AbstractEngine {
         @Override
         public void run() {
             readBarrier.reset();
-            if (!firstRead && readSemaphore.availablePermits() == 0) {
-                readSemaphore.release(Constant.THREAD_COUNT);
-            }
-            if (firstRead) {
-                firstRead = false;
+
+            synchronized (cachePool) {
+                cachePool.setLoadCursor(cachePool.getLoadCursor() + Constant.ONE_CACHE_SIZE);
             }
         }
     });

@@ -26,5 +26,9 @@ public interface Constant {
 
     int TOTAL_CACHE_COUNT = THREAD_COUNT * CACHE_SIZE;
 
+    int ONE_CACHE_SIZE = THREAD_COUNT * CACHE_SIZE;
+
     int CACHE_CAP = THREAD_COUNT * CACHE_SIZE * 2;
+
+    int MAPS_PER_BLOCK = 2;
 }

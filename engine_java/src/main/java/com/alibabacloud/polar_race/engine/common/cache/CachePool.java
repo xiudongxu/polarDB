@@ -1,5 +1,7 @@
 package com.alibabacloud.polar_race.engine.common.cache;
 
+import com.alibabacloud.polar_race.engine.common.Data;
+
 /**
  * @author wangshuo
  * @version 2018-11-24
@@ -7,7 +9,17 @@ package com.alibabacloud.polar_race.engine.common.cache;
 public class CachePool {
     private int readCursor;
     private int loadCursor;
+
+    private Data[] datas;
     private CacheBlock[] blocks;
+
+    public Data[] getDatas() {
+        return datas;
+    }
+
+    public void setDatas(Data[] datas) {
+        this.datas = datas;
+    }
 
     public int getReadCursor() {
         return readCursor;
