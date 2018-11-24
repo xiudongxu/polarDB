@@ -67,7 +67,7 @@ public class LoadCacheThread extends Thread {
                 }
             }
 
-            loadCursor += Constant.THREAD_COUNT * Constant.CACHE_SIZE;
+            loadCursor += Constant.TOTAL_CACHE_COUNT;
             loadBarrierAwait();
         }
     }

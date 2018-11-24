@@ -7,8 +7,8 @@ package com.alibabacloud.polar_race.engine.common;
 public interface Constant {
 
     //指向文件的指针 pointer 是一个long数据，高四字节表示数据文件编号；低位四字节表示数据文件中value的偏移量
-    int TOTAL_KV_COUNT = 64000000; //总键值对个数
-    //int TOTAL_KV_COUNT = 6400; //总键值对个数
+    //int TOTAL_KV_COUNT = 64000000; //总键值对个数
+    int TOTAL_KV_COUNT = 6400; //总键值对个数
     byte DATA_FILE_COUNT = 64; //用于存储值的文件个数
 
     int INIT_MAP_CAP = TOTAL_KV_COUNT / DATA_FILE_COUNT; //初始索引 map 的容量
@@ -22,5 +22,7 @@ public interface Constant {
 
     int THREAD_COUNT = 64;
 
-    int CACHE_SIZE = 2000;
+    int CACHE_SIZE = 20;
+
+    int TOTAL_CACHE_COUNT = THREAD_COUNT * CACHE_SIZE;
 }

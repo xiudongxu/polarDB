@@ -74,14 +74,14 @@ public class EngineRace extends AbstractEngine {
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
         long tmp = -1L; // key 为 -1 和 Long.MAX_VALUE 不可能吗？
         int[] range = SortIndex.instance.range(lower, upper);
-        for (int i = range[0]; i <= range[1]; i += (Constant.THREAD_COUNT * Constant.CACHE_SIZE)) {
+        for (int i = range[0]; i <= range[1]; i += Constant.TOTAL_CACHE_COUNT) {
             if (i >= Constant.TOTAL_KV_COUNT) return;
             try {
                 readSemaphore.acquire();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            int tmpEnd = i + Constant.THREAD_COUNT * Constant.CACHE_SIZE;
+            int tmpEnd = i + Constant.TOTAL_CACHE_COUNT;
             int endIndex = Constant.TOTAL_KV_COUNT > tmpEnd ? tmpEnd : Constant.TOTAL_KV_COUNT;
 
             for (int j = i; j < endIndex; j++) {
