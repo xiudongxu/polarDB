@@ -72,9 +72,9 @@ public class CacheThread extends Thread {
 
     private void doLoad(int loadCursor) {
         //加载入缓存
-        int startIndex = loadCursor + threadNum * Constant.CACHE_SIZE;
+        int startIndex = loadCursor + threadNum * Constant.BLOCK_SIZE;
         if (startIndex >= Constant.TOTAL_KV_COUNT) return;
-        int tmpEnd = startIndex + Constant.CACHE_SIZE;
+        int tmpEnd = startIndex + Constant.BLOCK_SIZE;
         int endIndex = tmpEnd > Constant.TOTAL_KV_COUNT ? Constant.TOTAL_KV_COUNT : tmpEnd;
         int mapIndex = (loadCursor / Constant.ONE_CACHE_SIZE) & (Constant.MAPS_PER_BLOCK - 1);
         LongObjectHashMap<byte[]> map = block.getMaps()[mapIndex];

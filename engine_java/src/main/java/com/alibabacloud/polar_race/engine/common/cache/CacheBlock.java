@@ -12,7 +12,7 @@ public class CacheBlock {
 
     public CacheBlock() {
         for (int i = 0; i < Constant.MAPS_PER_BLOCK; i++) {
-            maps[i] = new LongObjectHashMap<>(Constant.CACHE_SIZE);
+            maps[i] = new LongObjectHashMap<>(Constant.BLOCK_SIZE);
         }
     }
 

@@ -121,7 +121,7 @@ public class EngineRace extends AbstractEngine {
                 if (tmp == key) continue;
                 tmp = key;
 
-                int blockIndex = (j % Constant.ONE_CACHE_SIZE) / Constant.CACHE_SIZE;
+                int blockIndex = (j % Constant.ONE_CACHE_SIZE) / Constant.BLOCK_SIZE;
                 int mapIndex = (j / Constant.ONE_CACHE_SIZE) & (Constant.MAPS_PER_BLOCK - 1);
                 byte[] value = cachePool.getBlocks()[blockIndex].getMaps()[mapIndex].get(key);
                 visitor.visit(ByteUtil.long2Bytes(key), value);
