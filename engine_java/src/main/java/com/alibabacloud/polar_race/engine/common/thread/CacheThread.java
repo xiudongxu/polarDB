@@ -24,13 +24,15 @@ public class CacheThread extends Thread {
     private int threadNum;
     private CachePool cachePool;
     private CountDownLatch downLatch;
-    private CyclicBarrier loadBarrier;
+    private CyclicBarrier beginLoadBarrier;
+    private CyclicBarrier endLoadBarrier;
 
-    public CacheThread(int threadNum, CachePool cachePool, CyclicBarrier barrier,
-            CountDownLatch downLatch) {
+    public CacheThread(int threadNum, CachePool cachePool, CyclicBarrier bBarrier,
+            CyclicBarrier eBarrier, CountDownLatch downLatch) {
         this.threadNum = threadNum;
         this.cachePool = cachePool;
-        this.loadBarrier = barrier;
+        this.beginLoadBarrier = bBarrier;
+        this.endLoadBarrier = eBarrier;
         this.downLatch = downLatch;
         this.datas = cachePool.getDatas();
         this.block = cachePool.getBlocks()[threadNum];
@@ -39,51 +41,55 @@ public class CacheThread extends Thread {
     @Override
     public void run() {
         while (true) {
-            if (cachePool.getLoadCursor() >= Constant.TOTAL_KV_COUNT) return;
-
-            int loadCursor = cachePool.getLoadCursor();
-            //判断能不能继续添加缓存
-            synchronized (cachePool) {
-                if (Constant.CACHE_CAP - (loadCursor - cachePool.getReadCursor()) < 0) {
-                    try {
-                        cachePool.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    continue;
-                }
-            }
-
-            //加载入缓存
-            int startIndex = loadCursor + threadNum * Constant.CACHE_SIZE;
-            if (startIndex >= Constant.TOTAL_KV_COUNT) return;
-            int tmpEnd = startIndex + Constant.CACHE_SIZE;
-            int endIndex = tmpEnd > Constant.TOTAL_KV_COUNT ? Constant.TOTAL_KV_COUNT : tmpEnd;
-            int mapIndex = (loadCursor / Constant.ONE_CACHE_SIZE) & (Constant.MAPS_PER_BLOCK - 1);
-            LongObjectHashMap<byte[]> map = block.getMaps()[mapIndex];
-            for (int i = startIndex; i < endIndex; i++) {
-                long key = SortIndex.instance.get(i);
-                if (key == Long.MAX_VALUE) return; //TOTAL_KV_COUNT 必须能被 ONE_CACHE_SIZE 整除
-
-                int modulus = (int) (key & (datas.length - 1));
-                Data data = datas[modulus];
-
+            if (firstLoad) {
+                firstLoad();
+            } else {
+                int loadCursor = cachePool.getLoadCursor();
+                if (loadCursor >= Constant.TOTAL_KV_COUNT) return;
                 try {
-                    byte[] bytes = data.readValue(data.get(key));
-                    map.put(key, bytes);
-                } catch (EngineException e) {
-                    System.out.println("during load cache : read value IO exception!!!");
+                    beginLoadBarrier.await();
+                } catch (InterruptedException | BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
+                doLoad(loadCursor);
+                try {
+                    endLoadBarrier.await();
+                } catch (InterruptedException | BrokenBarrierException e) {
+                    e.printStackTrace();
                 }
             }
+        }
+    }
+
+    private void firstLoad() {
+        int loadCursor = cachePool.getLoadCursor();
+        for (int i = 0; i < Constant.MAPS_PER_BLOCK; i++) {
+            doLoad(loadCursor);
+        }
+        firstLoad = false;
+        downLatch.countDown();
+    }
+
+    private void doLoad(int loadCursor) {
+        //加载入缓存
+        int startIndex = loadCursor + threadNum * Constant.CACHE_SIZE;
+        if (startIndex >= Constant.TOTAL_KV_COUNT) return;
+        int tmpEnd = startIndex + Constant.CACHE_SIZE;
+        int endIndex = tmpEnd > Constant.TOTAL_KV_COUNT ? Constant.TOTAL_KV_COUNT : tmpEnd;
+        int mapIndex = (loadCursor / Constant.ONE_CACHE_SIZE) & (Constant.MAPS_PER_BLOCK - 1);
+        LongObjectHashMap<byte[]> map = block.getMaps()[mapIndex];
+        for (int i = startIndex; i < endIndex; i++) {
+            long key = SortIndex.instance.get(i);
+            if (key == Long.MAX_VALUE) return; //TOTAL_KV_COUNT 必须能被 ONE_CACHE_SIZE 整除
+
+            int modulus = (int) (key & (datas.length - 1));
+            Data data = datas[modulus];
 
             try {
-                loadBarrier.await();
-                if (firstLoad) {
-                    firstLoad = false;
-                    downLatch.countDown();
-                }
-            } catch (InterruptedException | BrokenBarrierException e) {
-                e.printStackTrace();
+                byte[] bytes = data.readValue(data.get(key));
+                map.put(key, bytes);
+            } catch (EngineException e) {
+                System.out.println("during load cache : read value IO exception!!!");
             }
         }
     }

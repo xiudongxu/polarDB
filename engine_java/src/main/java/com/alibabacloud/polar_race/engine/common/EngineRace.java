@@ -3,38 +3,68 @@ package com.alibabacloud.polar_race.engine.common;
 import com.alibabacloud.polar_race.engine.common.cache.CachePool;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
-import com.carrotsearch.hppc.LongObjectHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Semaphore;
 
 public class EngineRace extends AbstractEngine {
 
     private Data[] datas;
     private CachePool cachePool;
 
-    private LongObjectHashMap<byte[]>[] maps;
-    private boolean firstRead = true;
-
-    private Semaphore readSemaphore = new Semaphore(Constant.THREAD_COUNT);
-    private Semaphore loadSemaphore = new Semaphore(Constant.THREAD_COUNT);
-
-    private CyclicBarrier loadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+    private CyclicBarrier beginLoadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
-            readBarrier.reset();
-
             synchronized (cachePool) {
-                cachePool.setLoadCursor(cachePool.getLoadCursor() + Constant.ONE_CACHE_SIZE);
+                if (Constant.CACHE_CAP - (cachePool.getLoadCursor() - cachePool.getReadCursor()) <= 0) {
+                    try {
+                        cachePool.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
+            endLoadBarrier.reset();
         }
     });
 
-    private CyclicBarrier readBarrier = new CyclicBarrier(Constant.THREAD_COUNT, () -> {
-        loadBarrier.reset();
-        loadSemaphore.release(Constant.THREAD_COUNT);
+    private CyclicBarrier endLoadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+        @Override
+        public void run() {
+            synchronized (cachePool) {
+                cachePool.setLoadCursor(cachePool.getLoadCursor() + Constant.ONE_CACHE_SIZE);
+                cachePool.notify();
+            }
+            beginLoadBarrier.reset();
+        }
+    });
+
+    private CyclicBarrier beginReadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+        @Override
+        public void run() {
+            synchronized (cachePool) {
+                if (cachePool.getReadCursor() - cachePool.getLoadCursor() >= 0) {
+                    try {
+                        cachePool.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            endReadBarrier.reset();
+        }
+    });
+
+    private CyclicBarrier endReadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+        @Override
+        public void run() {
+            synchronized (cachePool) {
+                cachePool.setReadCursor(cachePool.getReadCursor() + Constant.ONE_CACHE_SIZE);
+                cachePool.notify();
+            }
+            beginReadBarrier.reset();
+        }
     });
 
     @Override
@@ -45,7 +75,7 @@ public class EngineRace extends AbstractEngine {
         }
         try {
             datas = EngineBoot.initDataFile(path);
-            maps = EngineBoot.initCacheMap(datas, loadSemaphore, loadBarrier);
+            cachePool = EngineBoot.initCachePool(datas, beginLoadBarrier, endLoadBarrier);
         } catch (InterruptedException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "init data file IO exception!!!");
         }
@@ -75,32 +105,30 @@ public class EngineRace extends AbstractEngine {
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
         long tmp = -1L; // key 为 -1 和 Long.MAX_VALUE 不可能吗？
         int[] range = SortIndex.instance.range(lower, upper);
-        for (int i = range[0]; i <= range[1]; i += Constant.TOTAL_CACHE_COUNT) {
+        for (int i = range[0]; i <= range[1]; i += Constant.ONE_CACHE_SIZE) {
             if (i >= Constant.TOTAL_KV_COUNT) return;
             try {
-                readSemaphore.acquire();
-            } catch (InterruptedException e) {
+                beginReadBarrier.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
                 e.printStackTrace();
             }
-            int tmpEnd = i + Constant.TOTAL_CACHE_COUNT;
-            int endIndex = Constant.TOTAL_KV_COUNT > tmpEnd ? tmpEnd : Constant.TOTAL_KV_COUNT;
 
+            int tmpEnd = i + Constant.ONE_CACHE_SIZE;
+            int endIndex = tmpEnd > Constant.TOTAL_KV_COUNT ? Constant.TOTAL_KV_COUNT : tmpEnd;
             for (int j = i; j < endIndex; j++) {
                 long key = SortIndex.instance.get(j);
-                if (key == Long.MAX_VALUE) {
-                    break;
-                }
-                if (tmp == key) {
-                    continue;
-                }
+                if (key == Long.MAX_VALUE) break;
+                if (tmp == key) continue;
                 tmp = key;
-                int cacheIndex = (j / Constant.CACHE_SIZE) & (Constant.THREAD_COUNT - 1);
-                byte[] value = maps[cacheIndex].get(key);
+
+                int blockIndex = (j % Constant.ONE_CACHE_SIZE) / Constant.CACHE_SIZE;
+                int mapIndex = (j / Constant.ONE_CACHE_SIZE) & (Constant.MAPS_PER_BLOCK - 1);
+                byte[] value = cachePool.getBlocks()[blockIndex].getMaps()[mapIndex].get(key);
                 visitor.visit(ByteUtil.long2Bytes(key), value);
             }
 
             try {
-                readBarrier.await();
+                endReadBarrier.await();
             } catch (InterruptedException | BrokenBarrierException e) {
                 e.printStackTrace();
             }

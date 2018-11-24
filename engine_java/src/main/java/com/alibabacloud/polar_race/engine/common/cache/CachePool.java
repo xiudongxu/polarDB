@@ -13,6 +13,11 @@ public class CachePool {
     private Data[] datas;
     private CacheBlock[] blocks;
 
+    public CachePool(Data[] datas, CacheBlock[] blocks) {
+        this.datas = datas;
+        this.blocks = blocks;
+    }
+
     public Data[] getDatas() {
         return datas;
     }

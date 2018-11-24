@@ -1,12 +1,12 @@
 package com.alibabacloud.polar_race.engine.common;
 
-import com.alibabacloud.polar_race.engine.common.thread.LoadCacheThread;
+import com.alibabacloud.polar_race.engine.common.cache.CacheBlock;
+import com.alibabacloud.polar_race.engine.common.cache.CachePool;
+import com.alibabacloud.polar_race.engine.common.thread.CacheThread;
 import com.alibabacloud.polar_race.engine.common.thread.InitDataThread;
-import com.carrotsearch.hppc.LongObjectHashMap;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Semaphore;
 
 /**
  * @author wangshuo
@@ -29,15 +29,15 @@ public class EngineBoot {
         return datas;
     }
 
-    public static LongObjectHashMap<byte[]>[] initCacheMap(Data[] datas, Semaphore semaphore,
-            CyclicBarrier barrier) {
-        LongObjectHashMap<byte[]>[] maps = new LongObjectHashMap[Constant.THREAD_COUNT];
+    public static CachePool initCachePool(Data[] datas, CyclicBarrier loadBB, CyclicBarrier loadEB) {
         CountDownLatch downLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
+        CacheBlock[] cacheBlocks = new CacheBlock[Constant.THREAD_COUNT];
+        CachePool cachePool = new CachePool(datas, cacheBlocks);
         for (int i = 0; i < Constant.THREAD_COUNT; i++) {
-            maps[i] = new LongObjectHashMap<>(Constant.CACHE_SIZE);
-            new LoadCacheThread(datas, i, semaphore, barrier, maps[i], downLatch).start();
+            cacheBlocks[i] = new CacheBlock();
+            new CacheThread(i, cachePool, loadBB, loadEB, downLatch).start();
         }
-        return maps;
+        return cachePool;
     }
 
     public static void closeDataFile(Data[] datas) throws IOException {
