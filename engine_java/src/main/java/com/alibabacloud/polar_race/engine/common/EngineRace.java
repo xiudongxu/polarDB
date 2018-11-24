@@ -126,6 +126,7 @@ public class EngineRace extends AbstractEngine {
                 byte[] value = cachePool.getBlocks()[blockIndex].getMaps()[mapIndex].get(key);
                 visitor.visit(ByteUtil.long2Bytes(key), value);
             }
+            System.out.println("now read cursor:" + i);
 
             try {
                 endReadBarrier.await();
