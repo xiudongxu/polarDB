@@ -23,21 +23,26 @@ public class EngineBoot {
         downLatch.await();
 
         long begin = System.currentTimeMillis();
-        System.out.println("start sort time :" + begin);
         SortIndex.instance.sort();
         System.out.println("sort cost time :" + (System.currentTimeMillis() - begin));
         return datas;
     }
 
-    public static CachePool initCachePool(Data[] datas, CyclicBarrier loadBB, CyclicBarrier loadEB) {
-        CountDownLatch downLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
+    public static CachePool initCachePool(Data[] datas) {
         CacheBlock[] cacheBlocks = new CacheBlock[Constant.THREAD_COUNT];
         CachePool cachePool = new CachePool(datas, cacheBlocks);
         for (int i = 0; i < Constant.THREAD_COUNT; i++) {
             cacheBlocks[i] = new CacheBlock();
-            new CacheThread(i, cachePool, loadBB, loadEB, downLatch).start();
         }
         return cachePool;
+    }
+
+    public static void loadDataToCachePool(CachePool cachePool, CyclicBarrier loadBB,
+            CyclicBarrier loadEB, CountDownLatch downLatch) throws InterruptedException {
+        for (int i = 0; i < Constant.THREAD_COUNT; i++) {
+            new CacheThread(i, cachePool, loadBB, loadEB, downLatch).start();
+        }
+        downLatch.await();
     }
 
     public static void closeDataFile(Data[] datas) throws IOException {

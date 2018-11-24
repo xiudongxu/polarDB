@@ -6,17 +6,23 @@ import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 
 public class EngineRace extends AbstractEngine {
 
     private Data[] datas;
     private CachePool cachePool;
+    private CountDownLatch loadDownLatch = new  CountDownLatch(Constant.THREAD_COUNT + 1);
 
     private CyclicBarrier beginLoadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
             synchronized (cachePool) {
+                if (cachePool.getLoadCursor() == 0) {
+                    loadDownLatch.countDown();
+                    cachePool.setLoadCursor(Constant.ONE_CACHE_SIZE * 2);
+                }
                 if (Constant.CACHE_CAP - (cachePool.getLoadCursor() - cachePool.getReadCursor()) <= 0) {
                     try {
                         cachePool.wait();
@@ -75,7 +81,8 @@ public class EngineRace extends AbstractEngine {
         }
         try {
             datas = EngineBoot.initDataFile(path);
-            cachePool = EngineBoot.initCachePool(datas, beginLoadBarrier, endLoadBarrier);
+            cachePool = EngineBoot.initCachePool(datas);
+            EngineBoot.loadDataToCachePool(cachePool, beginLoadBarrier, endLoadBarrier, loadDownLatch);
         } catch (InterruptedException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "init data file IO exception!!!");
         }
@@ -105,6 +112,7 @@ public class EngineRace extends AbstractEngine {
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
         long tmp = -1L; // key 为 -1 和 Long.MAX_VALUE 不可能吗？
         int[] range = SortIndex.instance.range(lower, upper);
+        System.out.println("start range from:" + range[0] + "end:" + range[1]);
         for (int i = range[0]; i <= range[1]; i += Constant.ONE_CACHE_SIZE) {
             if (i >= Constant.TOTAL_KV_COUNT) return;
             try {

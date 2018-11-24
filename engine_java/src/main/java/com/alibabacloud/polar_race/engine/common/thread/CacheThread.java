@@ -44,13 +44,13 @@ public class CacheThread extends Thread {
             if (firstLoad) {
                 firstLoad();
             } else {
-                int loadCursor = cachePool.getLoadCursor();
-                if (loadCursor >= Constant.TOTAL_KV_COUNT) return;
                 try {
                     beginLoadBarrier.await();
                 } catch (InterruptedException | BrokenBarrierException e) {
                     e.printStackTrace();
                 }
+                int loadCursor = cachePool.getLoadCursor();
+                if (loadCursor >= Constant.TOTAL_KV_COUNT) return;
                 doLoad(loadCursor);
                 try {
                     endLoadBarrier.await();
@@ -65,6 +65,7 @@ public class CacheThread extends Thread {
         int loadCursor = cachePool.getLoadCursor();
         for (int i = 0; i < Constant.MAPS_PER_BLOCK; i++) {
             doLoad(loadCursor);
+            loadCursor += Constant.ONE_CACHE_SIZE;
         }
         firstLoad = false;
         downLatch.countDown();

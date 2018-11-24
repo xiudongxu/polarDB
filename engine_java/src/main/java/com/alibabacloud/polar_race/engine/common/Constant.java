@@ -20,7 +20,7 @@ public interface Constant {
 
     int KEY_MAPPED_SIZE = 12 * 1000000;
 
-    int THREAD_COUNT = 64;
+    byte THREAD_COUNT = 64;
 
     int BLOCK_SIZE = 1000;
 
