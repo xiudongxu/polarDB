@@ -12,6 +12,8 @@ import java.util.concurrent.CyclicBarrier;
 public class EngineRace extends AbstractEngine {
 
     private Data[] datas;
+    private boolean ranged;
+    private int rangeCount = 1;
     private CachePool cachePool;
     private CountDownLatch loadDownLatch = new  CountDownLatch(Constant.THREAD_COUNT + 1);
 
@@ -19,7 +21,7 @@ public class EngineRace extends AbstractEngine {
         @Override
         public void run() {
             synchronized (cachePool) {
-                if (cachePool.getLoadCursor() == 0) {
+                if (cachePool.getLoadCursor() == 0 && rangeCount == 1) {
                     loadDownLatch.countDown();
                     cachePool.setLoadCursor(Constant.ONE_CACHE_SIZE * 2);
                 }
@@ -39,7 +41,11 @@ public class EngineRace extends AbstractEngine {
         @Override
         public void run() {
             synchronized (cachePool) {
-                cachePool.setLoadCursor(cachePool.getLoadCursor() + Constant.ONE_CACHE_SIZE);
+                int newLoadCursor = cachePool.getLoadCursor() + Constant.ONE_CACHE_SIZE;
+                if (newLoadCursor >= Constant.TOTAL_KV_COUNT && rangeCount == 1) {
+                    newLoadCursor += Constant.CACHE_CAP;
+                }
+                cachePool.setLoadCursor(newLoadCursor);
                 cachePool.notify();
             }
             beginLoadBarrier.reset();
@@ -66,8 +72,17 @@ public class EngineRace extends AbstractEngine {
         @Override
         public void run() {
             synchronized (cachePool) {
-                cachePool.setReadCursor(cachePool.getReadCursor() + Constant.ONE_CACHE_SIZE);
-                cachePool.notify();
+                int newReadCursor = cachePool.getReadCursor() + Constant.ONE_CACHE_SIZE;
+                if (newReadCursor >= Constant.TOTAL_KV_COUNT && rangeCount == 1) {
+                    cachePool.setReadCursor(0);
+                    cachePool.setLoadCursor(0);
+                    rangeCount++;
+                } else {
+                    cachePool.setReadCursor(newReadCursor);
+                }
+                if (Constant.CACHE_CAP - (cachePool.getLoadCursor() - cachePool.getReadCursor()) > 0) {
+                    cachePool.notify();
+                }
             }
             beginReadBarrier.reset();
         }
@@ -81,8 +96,6 @@ public class EngineRace extends AbstractEngine {
         }
         try {
             datas = EngineBoot.initDataFile(path);
-            cachePool = EngineBoot.initCachePool(datas);
-            EngineBoot.loadDataToCachePool(cachePool, beginLoadBarrier, endLoadBarrier, loadDownLatch);
         } catch (InterruptedException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "init data file IO exception!!!");
         }
@@ -110,11 +123,17 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
+        if (!ranged) {
+            ranged = true;
+            cachePool = EngineBoot.initCachePool(datas);
+            EngineBoot.loadDataToCachePool(cachePool, beginLoadBarrier, endLoadBarrier, loadDownLatch);
+        }
+
         long tmp = -1L; // key 为 -1 和 Long.MAX_VALUE 不可能吗？
         int[] range = SortIndex.instance.range(lower, upper);
-        System.out.println("start range from:" + range[0] + "end:" + range[1]);
+        System.out.println("start range from:" + range[0] + " end:" + range[1]);
         for (int i = range[0]; i <= range[1]; i += Constant.ONE_CACHE_SIZE) {
-            if (i >= Constant.TOTAL_KV_COUNT) return;
+            //if (i >= Constant.TOTAL_KV_COUNT) return;
             try {
                 beginReadBarrier.await();
             } catch (InterruptedException | BrokenBarrierException e) {

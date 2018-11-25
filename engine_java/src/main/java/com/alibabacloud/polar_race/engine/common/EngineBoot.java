@@ -41,12 +41,16 @@ public class EngineBoot {
     }
 
     public static void loadDataToCachePool(CachePool cachePool, CyclicBarrier loadBB,
-            CyclicBarrier loadEB, CountDownLatch downLatch) throws InterruptedException {
+            CyclicBarrier loadEB, CountDownLatch downLatch) {
         System.out.println("start load to cache pool at " + LocalDateTime.now());
         for (int i = 0; i < Constant.THREAD_COUNT; i++) {
             new CacheThread(i, cachePool, loadBB, loadEB, downLatch).start();
         }
-        downLatch.await();
+        try {
+            downLatch.await();
+        } catch (InterruptedException e) {
+            System.out.println("down latch await error");
+        }
         System.out.println("finish load to cache pool at " + LocalDateTime.now());
     }
 

@@ -31,6 +31,22 @@ public class Test {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        try {
+            System.out.println("range count one finish");
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("range count two start");
+        rangeData = new RangeData(visitor);
+        rangeData.start();
+        try {
+            rangeData.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         System.out.println("range data cost time:" + (System.currentTimeMillis() - begin));
     }
 
