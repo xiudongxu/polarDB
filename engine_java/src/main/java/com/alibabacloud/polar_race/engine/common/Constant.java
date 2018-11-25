@@ -22,6 +22,9 @@ public interface Constant {
 
     byte THREAD_COUNT = 64;
 
+    //byte RANGE_THREAD_COUNT = THREAD_COUNT / 2 + 1;
+    byte RANGE_THREAD_COUNT = THREAD_COUNT;
+
     int BLOCK_SIZE = 1000;  //BLOCK_SIZE 的设置必须使 CACHE_CAP < TOTAL_KV_COUNT，并且使 ONE_CACHE_SIZE 能整除 TOTAL_KV_COUNT
 
     int MAPS_PER_BLOCK = 2;

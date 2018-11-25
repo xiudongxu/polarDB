@@ -120,7 +120,7 @@ public class EngineRace extends AbstractEngine {
 
     private CountDownLatch loadDownLatch = new  CountDownLatch(Constant.THREAD_COUNT + 1);
 
-    private CyclicBarrier rangeBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+    private CyclicBarrier rangeBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
             ranged = true;
@@ -128,7 +128,7 @@ public class EngineRace extends AbstractEngine {
         }
     });
 
-    private CyclicBarrier beginLoadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+    private CyclicBarrier beginLoadBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
             synchronized (cachePool) {
@@ -148,7 +148,7 @@ public class EngineRace extends AbstractEngine {
         }
     });
 
-    private CyclicBarrier endLoadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+    private CyclicBarrier endLoadBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
             synchronized (cachePool) {
@@ -163,7 +163,7 @@ public class EngineRace extends AbstractEngine {
         }
     });
 
-    private CyclicBarrier beginReadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+    private CyclicBarrier beginReadBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
             synchronized (cachePool) {
@@ -179,7 +179,7 @@ public class EngineRace extends AbstractEngine {
         }
     });
 
-    private CyclicBarrier endReadBarrier = new CyclicBarrier(Constant.THREAD_COUNT, new Runnable() {
+    private CyclicBarrier endReadBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
         @Override
         public void run() {
             synchronized (cachePool) {

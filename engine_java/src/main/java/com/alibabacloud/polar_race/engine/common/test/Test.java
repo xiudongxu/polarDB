@@ -5,6 +5,7 @@ import com.alibabacloud.polar_race.engine.common.ByteUtil;
 import com.alibabacloud.polar_race.engine.common.Constant;
 import com.alibabacloud.polar_race.engine.common.EngineRace;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -20,10 +21,29 @@ public class Test {
         AbstractVisitor visitor = new VisitorImpl();
         engineRace.open("/Users/wangshuo/polarDb/store");
 
-        write(engineRace);
+        CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT);
+        for (int i = 1; i <= Constant.THREAD_COUNT; i++) {
+            new WriteData(i, downLatch).start();
+        }
+        try {
+            downLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        downLatch = new CountDownLatch(Constant.THREAD_COUNT);
+        for (int i = 1; i <= Constant.THREAD_COUNT; i++) {
+            new ReadData(i, downLatch).start();
+        }
+        try {
+            downLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
 
         long begin = System.currentTimeMillis();
-        CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT + 1);
+        downLatch = new CountDownLatch(Constant.THREAD_COUNT + 1);
         new RangeData(visitor, downLatch).start();
         try {
             downLatch.await();
@@ -63,12 +83,59 @@ public class Test {
         }
     }
 
-    public static void write(EngineRace engineRace) throws EngineException {
-        long tmp = 1;
-        for (int i = 0; i < Constant.TOTAL_KV_COUNT; i++) {
-            byte[] key = ByteUtil.long2Bytes(tmp);
-            engineRace.write(key, makeValue(key));
-            tmp += 1;
+    static class WriteData extends Thread {
+
+        private int threadNum;
+        private CountDownLatch downLatch;
+
+        public WriteData(int threadNum, CountDownLatch downLatch) {
+            this.threadNum = threadNum;
+            this.downLatch = downLatch;
+        }
+
+        @Override
+        public void run() {
+            try {
+                long tmp = 1 + (this.threadNum - 1) * 100;
+                for (int i = 0; i < 100; i++) {
+                    byte[] key = ByteUtil.long2Bytes(tmp);
+                    engineRace.write(key, makeValue(key));
+                    tmp += 1;
+                }
+            } catch (EngineException e) {}
+            finally {
+                downLatch.countDown();
+            }
+        }
+    }
+
+    static class ReadData extends Thread {
+
+        private int threadNum;
+        private CountDownLatch downLatch;
+
+        public ReadData(int threadNum, CountDownLatch downLatch) {
+            this.threadNum = threadNum;
+            this.downLatch = downLatch;
+        }
+
+        @Override
+        public void run() {
+            try {
+                long tmp = 1 + (this.threadNum - 1) * 100;
+                for (int i = 0; i < 100; i++) {
+                    byte[] key = ByteUtil.long2Bytes(tmp);
+                    byte[] value = engineRace.read(key);
+                    byte[] prefixValue = new byte[8];
+                    System.arraycopy(value, 0, prefixValue, 0, 8);
+                    if (!Arrays.equals(key, prefixValue)) {
+                        System.out.println("key:" + ByteUtil.bytes2Long(key) + " not match value");
+                    }
+                }
+            } catch (EngineException e) {}
+            finally {
+                downLatch.countDown();
+            }
         }
     }
 
