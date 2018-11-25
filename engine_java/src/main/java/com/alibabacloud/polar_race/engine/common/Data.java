@@ -3,17 +3,15 @@ package com.alibabacloud.polar_race.engine.common;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import com.carrotsearch.hppc.LongIntHashMap;
-import net.smacke.jaydio.DirectRandomAccessFile;
-import sun.misc.Contended;
-import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import sun.misc.Contended;
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * 数据对存储相关
@@ -70,7 +68,7 @@ public class Data {
                 bytes[j] = keyMapperByteBuffer.get();
             }
             long aLong = ByteUtil.bytes2Long(bytes);
-            SortIndex.instance.set(aLong);
+            //SortIndex.instance.set(aLong);
             map.put(aLong, i);
         }
 
@@ -81,15 +79,18 @@ public class Data {
     }
 
     public synchronized void storeKV(byte[] key, byte[] value) throws EngineException {
-        appendValue(value);
+        int offset = appendValue(value);
         appendKey(key);
+        map.put(ByteUtil.bytes2Long(key), offset);
     }
 
-    private void appendValue(byte[] value) throws EngineException {
+    private int appendValue(byte[] value) throws EngineException {
         try {
             wirteBuffer.clear();
             unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);
+            long position = valueFileChannel.position();
             valueFileChannel.write(wirteBuffer);
+            return (int) ((position >> 12) + 1);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
                     "write value IO exception!!!" + e.getMessage());
@@ -123,6 +124,10 @@ public class Data {
 
     public int get(long key) {
         return map.get(key);
+    }
+
+    public LongIntHashMap getMap() {
+        return map;
     }
 
     public void close() throws IOException {

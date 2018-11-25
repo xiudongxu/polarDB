@@ -17,7 +17,6 @@ public class SortIndex {
     private SortIndex(){
         this.atomicInteger = new AtomicInteger(0);
         index = new long[Constant.TOTAL_KV_COUNT];
-        //index = new long[6400];
         for (int i = 0; i < index.length; i++) {
             index[i] = Long.MAX_VALUE;
         }
@@ -37,7 +36,7 @@ public class SortIndex {
     public int[] range(byte[] lower,byte[] upper) {
         int[] ints = new int[2];
         ints[0] = lower == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(lower));
-        ints[1] = upper == null ? index.length-1 : binarySearch(index, ByteUtil.bytes2Long(upper));
+        ints[1] = upper == null ? index.length - 1 : binarySearch(index, ByteUtil.bytes2Long(upper));
         return ints;
     }
 
@@ -58,7 +57,7 @@ public class SortIndex {
     private static int binarySearch(long[] arr, long x) {
         int low = 0;
         int high = arr.length - 1;
-        int mid;
+        int mid = 0;
         while (low <= high) {
             mid = (low + high) / 2;
             if (arr[mid] > x) {
@@ -69,6 +68,6 @@ public class SortIndex {
                 return mid;
             }
         }
-        return -1;
+        return mid; //返回与被查找数据最近的且大于它的值
     }
 }

@@ -20,6 +20,6 @@ public class VisitorImpl extends AbstractVisitor {
         if (!Arrays.equals(key, prefixValue)) {
             System.out.println("key:" + ByteUtil.bytes2Long(key) + " not match value");
         }
-        //System.out.println("thread name:" + Thread.currentThread().getName() + " key:" + ByteUtil.bytes2Long(key) + " " + Arrays.equals(key, prefixValue) + " " + integer.getAndIncrement());
+        System.out.println("thread name:" + Thread.currentThread().getName() + " key:" + ByteUtil.bytes2Long(key) + " " + Arrays.equals(key, prefixValue) + " " + integer.getAndIncrement());
     }
 }

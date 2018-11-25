@@ -4,6 +4,7 @@ import com.alibabacloud.polar_race.engine.common.cache.CacheBlock;
 import com.alibabacloud.polar_race.engine.common.cache.CachePool;
 import com.alibabacloud.polar_race.engine.common.thread.CacheThread;
 import com.alibabacloud.polar_race.engine.common.thread.InitDataThread;
+import com.alibabacloud.polar_race.engine.common.thread.LoadIndexThread;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.concurrent.CountDownLatch;
@@ -22,10 +23,6 @@ public class EngineBoot {
             new InitDataThread(i, path, datas, downLatch).start();
         }
         downLatch.await();
-
-        System.out.println("start sort index at " + LocalDateTime.now());
-        SortIndex.instance.sort();
-        System.out.println("finish sort index at " + LocalDateTime.now());
         return datas;
     }
 
@@ -42,6 +39,21 @@ public class EngineBoot {
 
     public static void loadDataToCachePool(CachePool cachePool, CyclicBarrier loadBB,
             CyclicBarrier loadEB, CountDownLatch downLatch) {
+
+        Data[] datas = cachePool.getDatas();
+        CountDownLatch countDownLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
+        for (int i = 0; i < Constant.DATA_FILE_COUNT; i++) {
+            new LoadIndexThread(datas[i], countDownLatch).start();
+        }
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            System.out.println("load index down latch await error");
+        }
+        System.out.println("load index finish; start sort index at " + LocalDateTime.now());
+        SortIndex.instance.sort();
+        System.out.println("finish sort index at " + LocalDateTime.now());
+
         System.out.println("start load to cache pool at " + LocalDateTime.now());
         for (int i = 0; i < Constant.THREAD_COUNT; i++) {
             new CacheThread(i, cachePool, loadBB, loadEB, downLatch).start();
@@ -49,7 +61,7 @@ public class EngineBoot {
         try {
             downLatch.await();
         } catch (InterruptedException e) {
-            System.out.println("down latch await error");
+            System.out.println("loag to cache down latch await error");
         }
         System.out.println("finish load to cache pool at " + LocalDateTime.now());
     }
