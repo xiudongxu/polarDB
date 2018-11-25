@@ -43,7 +43,7 @@ public class EngineBoot {
         Data[] datas = cachePool.getDatas();
         CountDownLatch countDownLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
         for (int i = 0; i < Constant.DATA_FILE_COUNT; i++) {
-            new LoadIndexThread(datas[i], countDownLatch).start();
+            new LoadIndexThread(datas[i], countDownLatch, cachePool).start();
         }
         try {
             countDownLatch.await();

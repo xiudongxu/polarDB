@@ -5,20 +5,20 @@ import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 
 public class EngineRace extends AbstractEngine {
 
-    private boolean noWrite = true; //为了看日志，这些天提交一直没有有价值的日志
-    private boolean noRead = true;
+    private int writeCount = 0; //为了看日志，这些天提交一直没有有价值的日志
+    private int readCount = 0;
 
     private Data[] datas;
     private boolean ranged;
     private int rangeCount = 1;
     private CachePool cachePool;
+    private int totalKvCount;
 
     @Override
     public void open(String path) throws EngineException {
@@ -36,10 +36,11 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void write(byte[] key, byte[] value) throws EngineException {
-        if (noWrite) {
-            noWrite = false;
-            System.out.println("start write key value at " + LocalDateTime.now());
+        if (writeCount < 10) {
+            System.out.println("write key value count :" + writeCount);
+            writeCount++;
         }
+
         long keyL = ByteUtil.bytes2Long(key);
         int modulus = (int) (keyL & (datas.length - 1));
         Data data = datas[modulus];
@@ -48,10 +49,11 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public byte[] read(byte[] key) throws EngineException {
-        if (noRead) {
-            noRead = false;
-            System.out.println("start read key value at " + LocalDateTime.now());
+        if (readCount < 10) {
+            System.out.println("read key value count :" + readCount);
+            readCount++;
         }
+
         long keyL = ByteUtil.bytes2Long(key);
         int modulus = (int) (keyL & (datas.length - 1));
         Data data = datas[modulus];
@@ -83,7 +85,7 @@ public class EngineRace extends AbstractEngine {
             }
 
             int tmpEnd = i + Constant.ONE_CACHE_SIZE;
-            int endIndex = tmpEnd > Constant.TOTAL_KV_COUNT ? Constant.TOTAL_KV_COUNT : tmpEnd;
+            int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
             for (int j = i; j < endIndex; j++) {
                 long key = SortIndex.instance.get(j);
                 if (key == Long.MAX_VALUE) break;
@@ -125,6 +127,7 @@ public class EngineRace extends AbstractEngine {
         public void run() {
             ranged = true;
             EngineBoot.loadDataToCachePool(cachePool, beginLoadBarrier, endLoadBarrier, loadDownLatch);
+            totalKvCount = cachePool.getTotalKvCount().get();
         }
     });
 
@@ -153,8 +156,8 @@ public class EngineRace extends AbstractEngine {
         public void run() {
             synchronized (cachePool) {
                 int newLoadCursor = cachePool.getLoadCursor() + Constant.ONE_CACHE_SIZE;
-                if (newLoadCursor >= Constant.TOTAL_KV_COUNT && rangeCount == 1) {
-                    newLoadCursor += Constant.CACHE_CAP;
+                if (newLoadCursor >= totalKvCount && rangeCount == 1) {
+                    newLoadCursor = totalKvCount + Constant.CACHE_CAP;
                 }
                 cachePool.setLoadCursor(newLoadCursor);
                 cachePool.notify();
@@ -184,7 +187,7 @@ public class EngineRace extends AbstractEngine {
         public void run() {
             synchronized (cachePool) {
                 int newReadCursor = cachePool.getReadCursor() + Constant.ONE_CACHE_SIZE;
-                if (newReadCursor >= Constant.TOTAL_KV_COUNT && rangeCount == 1) {
+                if (newReadCursor >= totalKvCount && rangeCount == 1) {
                     cachePool.setReadCursor(0);
                     cachePool.setLoadCursor(0);
                     rangeCount++;

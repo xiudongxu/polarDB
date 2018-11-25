@@ -37,6 +37,7 @@ public class SortIndex {
         int[] ints = new int[2];
         ints[0] = lower == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(lower));
         ints[1] = upper == null ? index.length - 1 : binarySearch(index, ByteUtil.bytes2Long(upper));
+
         return ints;
     }
 

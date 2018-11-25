@@ -5,6 +5,7 @@ import com.alibabacloud.polar_race.engine.common.ByteUtil;
 import com.alibabacloud.polar_race.engine.common.Constant;
 import com.alibabacloud.polar_race.engine.common.EngineRace;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
@@ -16,7 +17,7 @@ public class Test {
 
     private static EngineRace engineRace;
 
-    /*public static void main(String[] args) throws IOException, EngineException {
+    public static void main(String[] args) throws IOException, EngineException {
         engineRace = new EngineRace();
         AbstractVisitor visitor = new VisitorImpl();
         engineRace.open("/Users/wangshuo/polarDb/store");
@@ -62,7 +63,7 @@ public class Test {
         }
 
         System.out.println("range data cost time:" + (System.currentTimeMillis() - begin));
-    }*/
+    }
 
     static class RangeData extends Thread {
 

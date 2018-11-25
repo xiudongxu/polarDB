@@ -2,7 +2,6 @@ package com.alibabacloud.polar_race.engine.common.test;
 
 import com.alibabacloud.polar_race.engine.common.AbstractVisitor;
 import com.alibabacloud.polar_race.engine.common.ByteUtil;
-import com.alibabacloud.polar_race.engine.common.Constant;
 import com.alibabacloud.polar_race.engine.common.EngineRace;
 import java.util.concurrent.CountDownLatch;
 
@@ -25,10 +24,8 @@ public class RangeThread extends Thread {
     @Override
     public void run() {
         try {
-            long tmp = 1;
-            byte[] lower = ByteUtil.long2Bytes(tmp);
-            tmp += Constant.TOTAL_KV_COUNT - 1;
-            byte[] upper = ByteUtil.long2Bytes(tmp);
+            byte[] lower = ByteUtil.long2Bytes(1);
+            byte[] upper = ByteUtil.long2Bytes(6400);
             engineRace.range(lower, upper, visitor);
         } finally {
             downLatch.countDown();

@@ -1,6 +1,7 @@
 package com.alibabacloud.polar_race.engine.common.cache;
 
 import com.alibabacloud.polar_race.engine.common.Data;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wangshuo
@@ -13,9 +14,19 @@ public class CachePool {
     private Data[] datas;
     private CacheBlock[] blocks;
 
+    private AtomicInteger totalKvCount = new AtomicInteger(0);
+
     public CachePool(Data[] datas, CacheBlock[] blocks) {
         this.datas = datas;
         this.blocks = blocks;
+    }
+
+    public AtomicInteger getTotalKvCount() {
+        return totalKvCount;
+    }
+
+    public void add(int count) {
+        totalKvCount.getAndAdd(count);
     }
 
     public Data[] getDatas() {

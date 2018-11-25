@@ -20,6 +20,7 @@ public class CacheThread extends Thread {
     private Data[] datas;
     private CacheBlock block;
     private boolean firstLoad = true;
+    private int totalKvCount;
 
     private int threadNum;
     private CachePool cachePool;
@@ -36,6 +37,7 @@ public class CacheThread extends Thread {
         this.downLatch = downLatch;
         this.datas = cachePool.getDatas();
         this.block = cachePool.getBlocks()[threadNum];
+        this.totalKvCount = cachePool.getTotalKvCount().get();
     }
 
     @Override
@@ -50,7 +52,7 @@ public class CacheThread extends Thread {
                     e.printStackTrace();
                 }
                 int loadCursor = cachePool.getLoadCursor();
-                if (loadCursor >= Constant.TOTAL_KV_COUNT) return;
+                if (loadCursor >= totalKvCount) return;
                 doLoad(loadCursor);
                 try {
                     endLoadBarrier.await();
@@ -77,9 +79,9 @@ public class CacheThread extends Thread {
     private void doLoad(int loadCursor) {
         //加载入缓存
         int startIndex = loadCursor + threadNum * Constant.BLOCK_SIZE;
-        if (startIndex >= Constant.TOTAL_KV_COUNT) return;
+        if (startIndex >= totalKvCount) return;
         int tmpEnd = startIndex + Constant.BLOCK_SIZE;
-        int endIndex = tmpEnd > Constant.TOTAL_KV_COUNT ? Constant.TOTAL_KV_COUNT : tmpEnd;
+        int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
         int mapIndex = (loadCursor / Constant.ONE_CACHE_SIZE) & (Constant.MAPS_PER_BLOCK - 1);
         LongObjectHashMap<byte[]> map = block.getMaps()[mapIndex];
         for (int i = startIndex; i < endIndex; i++) {
