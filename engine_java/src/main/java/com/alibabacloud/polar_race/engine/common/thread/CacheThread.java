@@ -62,13 +62,16 @@ public class CacheThread extends Thread {
     }
 
     private void firstLoad() {
-        int loadCursor = cachePool.getLoadCursor();
-        for (int i = 0; i < Constant.MAPS_PER_BLOCK; i++) {
-            doLoad(loadCursor);
-            loadCursor += Constant.ONE_CACHE_SIZE;
+        try {
+            int loadCursor = cachePool.getLoadCursor();
+            for (int i = 0; i < Constant.MAPS_PER_BLOCK; i++) {
+                doLoad(loadCursor);
+                loadCursor += Constant.ONE_CACHE_SIZE;
+            }
+            firstLoad = false;
+        } finally {
+            downLatch.countDown();
         }
-        firstLoad = false;
-        downLatch.countDown();
     }
 
     private void doLoad(int loadCursor) {
