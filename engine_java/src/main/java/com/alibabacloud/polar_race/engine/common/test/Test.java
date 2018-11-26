@@ -42,16 +42,9 @@ public class Test {
             e.printStackTrace();
         }
 
-
         long begin = System.currentTimeMillis();
         downLatch = new CountDownLatch(Constant.THREAD_COUNT + 1);
         new RangeData(visitor, downLatch).start();
-
-        /*try {
-            downLatch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }*/
 
         System.out.println("range data cost time:" + (System.currentTimeMillis() - begin));
     }

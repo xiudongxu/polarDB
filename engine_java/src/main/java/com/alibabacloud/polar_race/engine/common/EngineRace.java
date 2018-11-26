@@ -147,11 +147,17 @@ public class EngineRace extends AbstractEngine {
                     loadDownLatch.countDown();
                     cachePool.setLoadCursor(Constant.ONE_CACHE_SIZE * 2);
                 }
-                if (Constant.CACHE_CAP - (cachePool.getLoadCursor() - cachePool.getReadCursor()) <= 0) {
-                    try {
-                        cachePool.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+
+                while(true) {
+                    if ((rangeCount == 1 && cachePool.getLoadCursor() >= totalKvCount) ||
+                            Constant.CACHE_CAP - (cachePool.getLoadCursor() - cachePool.getReadCursor()) <= 0) {
+                        try {
+                            cachePool.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        break;
                     }
                 }
             }

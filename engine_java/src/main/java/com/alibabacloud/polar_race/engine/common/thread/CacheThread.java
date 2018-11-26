@@ -80,10 +80,12 @@ public class CacheThread extends Thread {
         //加载入缓存
         int startIndex = loadCursor + threadNum * Constant.BLOCK_SIZE;
         if (startIndex >= totalKvCount) return;
+
         int tmpEnd = startIndex + Constant.BLOCK_SIZE;
         int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
         int mapIndex = (loadCursor / Constant.ONE_CACHE_SIZE) & (Constant.MAPS_PER_BLOCK - 1);
         LongObjectHashMap<byte[]> map = block.getMaps()[mapIndex];
+
         for (int i = startIndex; i < endIndex; i++) {
             long key = SortIndex.instance.get(i);
             if (key == Long.MAX_VALUE) return; //TOTAL_KV_COUNT 必须能被 ONE_CACHE_SIZE 整除
