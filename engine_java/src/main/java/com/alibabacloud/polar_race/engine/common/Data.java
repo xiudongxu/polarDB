@@ -135,4 +135,8 @@ public class Data {
         keyMappedFile.close();
         accessFileChannel.close();
     }
+
+    public int getSubscript() {
+        return subscript;
+    }
 }

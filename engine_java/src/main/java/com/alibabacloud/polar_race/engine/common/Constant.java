@@ -8,7 +8,8 @@ public interface Constant {
 
     //指向文件的指针 pointer 是一个long数据，高四字节表示数据文件编号；低位四字节表示数据文件中value的偏移量
     int TOTAL_KV_COUNT = 64000000; //总键值对个数
-    //int TOTAL_KV_COUNT = 6800; //总键值对个数
+    //int TOTAL_KV_COUNT = 100000; //总键值对个数
+
     byte DATA_FILE_COUNT = 64; //用于存储值的文件个数
 
     int INIT_MAP_CAP = TOTAL_KV_COUNT / DATA_FILE_COUNT; //初始索引 map 的容量
@@ -22,10 +23,9 @@ public interface Constant {
 
     byte THREAD_COUNT = 64;
 
-    //byte RANGE_THREAD_COUNT = THREAD_COUNT / 2 + 1;
     byte RANGE_THREAD_COUNT = THREAD_COUNT;
 
-    int BLOCK_SIZE = 1000;  //BLOCK_SIZE 的设置必须使 CACHE_CAP < TOTAL_KV_COUNT，并且使 ONE_CACHE_SIZE 能整除 TOTAL_KV_COUNT
+    int BLOCK_SIZE = 1000;
 
     int MAPS_PER_BLOCK = 2;
 

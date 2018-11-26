@@ -19,9 +19,13 @@ public class Test {
 
     public static void main(String[] args) throws IOException, EngineException {
         engineRace = new EngineRace();
-        AbstractVisitor visitor = new VisitorImpl();
         engineRace.open("/Users/wangshuo/polarDb/store");
 
+        //write();
+        readAndRange();
+    }
+
+    public static void write() {
         CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT);
         for (int i = 1; i <= Constant.THREAD_COUNT; i++) {
             new WriteData(i, downLatch).start();
@@ -31,8 +35,10 @@ public class Test {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
 
-        downLatch = new CountDownLatch(Constant.THREAD_COUNT);
+    public static void readAndRange() {
+        CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT);
         for (int i = 1; i <= Constant.THREAD_COUNT; i++) {
             new ReadData(i, downLatch).start();
         }
@@ -44,6 +50,7 @@ public class Test {
 
         long begin = System.currentTimeMillis();
         downLatch = new CountDownLatch(Constant.THREAD_COUNT + 1);
+        AbstractVisitor visitor = new VisitorImpl();
         new RangeData(visitor, downLatch).start();
 
         System.out.println("range data cost time:" + (System.currentTimeMillis() - begin));

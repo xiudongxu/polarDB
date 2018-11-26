@@ -8,7 +8,6 @@ import com.alibabacloud.polar_race.engine.common.cache.CachePool;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.carrotsearch.hppc.LongObjectHashMap;
 import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 
 /**
@@ -19,22 +18,19 @@ public class CacheThread extends Thread {
 
     private Data[] datas;
     private CacheBlock block;
-    private boolean firstLoad = true;
     private int totalKvCount;
 
     private int threadNum;
     private CachePool cachePool;
-    private CountDownLatch downLatch;
     private CyclicBarrier beginLoadBarrier;
     private CyclicBarrier endLoadBarrier;
 
     public CacheThread(int threadNum, CachePool cachePool, CyclicBarrier bBarrier,
-            CyclicBarrier eBarrier, CountDownLatch downLatch) {
+            CyclicBarrier eBarrier) {
         this.threadNum = threadNum;
         this.cachePool = cachePool;
         this.beginLoadBarrier = bBarrier;
         this.endLoadBarrier = eBarrier;
-        this.downLatch = downLatch;
         this.datas = cachePool.getDatas();
         this.block = cachePool.getBlocks()[threadNum];
         this.totalKvCount = cachePool.getTotalKvCount().get();
@@ -43,41 +39,25 @@ public class CacheThread extends Thread {
     @Override
     public void run() {
         while (true) {
-            if (firstLoad) {
-                firstLoad();
-            } else {
-                try {
-                    beginLoadBarrier.await();
-                } catch (InterruptedException | BrokenBarrierException e) {
-                    e.printStackTrace();
-                }
-                int loadCursor = cachePool.getLoadCursor();
-                if (loadCursor >= totalKvCount) return;
-                doLoad(loadCursor);
-                try {
-                    endLoadBarrier.await();
-                } catch (InterruptedException | BrokenBarrierException e) {
-                    e.printStackTrace();
-                }
+            try {
+                beginLoadBarrier.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
+                e.printStackTrace();
             }
-        }
-    }
 
-    private void firstLoad() {
-        try {
             int loadCursor = cachePool.getLoadCursor();
-            for (int i = 0; i < Constant.MAPS_PER_BLOCK; i++) {
-                doLoad(loadCursor);
-                loadCursor += Constant.ONE_CACHE_SIZE;
+            if (loadCursor >= totalKvCount) return;
+            doLoad(loadCursor);
+
+            try {
+                endLoadBarrier.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
+                e.printStackTrace();
             }
-            firstLoad = false;
-        } finally {
-            downLatch.countDown();
         }
     }
 
     private void doLoad(int loadCursor) {
-        //加载入缓存
         int startIndex = loadCursor + threadNum * Constant.BLOCK_SIZE;
         if (startIndex >= totalKvCount) return;
 
@@ -85,19 +65,16 @@ public class CacheThread extends Thread {
         int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
         int mapIndex = (loadCursor / Constant.ONE_CACHE_SIZE) & (Constant.MAPS_PER_BLOCK - 1);
         LongObjectHashMap<byte[]> map = block.getMaps()[mapIndex];
-
+        map.clear();
         for (int i = startIndex; i < endIndex; i++) {
             long key = SortIndex.instance.get(i);
-            if (key == Long.MAX_VALUE) return; //TOTAL_KV_COUNT 必须能被 ONE_CACHE_SIZE 整除
-
             int modulus = (int) (key & (datas.length - 1));
             Data data = datas[modulus];
-
             try {
                 byte[] bytes = data.readValue(data.get(key));
                 map.put(key, bytes);
             } catch (EngineException e) {
-                System.out.println("during load cache : read value IO exception!!!");
+                System.out.println("during load to cache : read value IO exception!!!");
             }
         }
     }

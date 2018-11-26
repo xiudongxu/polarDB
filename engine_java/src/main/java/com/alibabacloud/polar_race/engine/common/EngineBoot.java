@@ -23,6 +23,7 @@ public class EngineBoot {
             new InitDataThread(i, path, datas, downLatch).start();
         }
         downLatch.await();
+        System.out.println("finish init data file at " + LocalDateTime.now());
         return datas;
     }
 
@@ -37,9 +38,7 @@ public class EngineBoot {
         return cachePool;
     }
 
-    public static void loadDataToCachePool(CachePool cachePool, CyclicBarrier loadBB,
-            CyclicBarrier loadEB, CountDownLatch downLatch) {
-
+    public static void loadAndSortIndex(CachePool cachePool) {
         Data[] datas = cachePool.getDatas();
         CountDownLatch countDownLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
         for (int i = 0; i < Constant.DATA_FILE_COUNT; i++) {
@@ -53,17 +52,14 @@ public class EngineBoot {
         System.out.println("load index finish; start sort index at " + LocalDateTime.now());
         SortIndex.instance.sort();
         System.out.println("finish sort index at " + LocalDateTime.now());
+    }
 
+    public static void loadToCachePool(CachePool cachePool, CyclicBarrier loadBB,
+            CyclicBarrier loadEB) {
         System.out.println("start load to cache pool at " + LocalDateTime.now());
         for (int i = 0; i < Constant.THREAD_COUNT; i++) {
-            new CacheThread(i, cachePool, loadBB, loadEB, downLatch).start();
+            new CacheThread(i, cachePool, loadBB, loadEB).start();
         }
-        try {
-            downLatch.await();
-        } catch (InterruptedException e) {
-            System.out.println("loag to cache down latch await error");
-        }
-        System.out.println("finish load to cache pool at " + LocalDateTime.now());
     }
 
     public static void closeDataFile(Data[] datas) throws IOException {

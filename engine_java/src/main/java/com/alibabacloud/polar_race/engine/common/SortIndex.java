@@ -2,6 +2,7 @@ package com.alibabacloud.polar_race.engine.common;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+import javafx.util.Pair;
 
 /**
  * @author dongxu.xiu
@@ -33,28 +34,13 @@ public class SortIndex {
         Arrays.sort(index);
     }
 
-    public int[] range(byte[] lower,byte[] upper) {
+    public Pair<Integer, Integer> range(byte[] lower,byte[] upper) {
         int[] ints = new int[2];
         ints[0] = lower == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(lower));
         ints[1] = upper == null ? index.length - 1 : binarySearch(index, ByteUtil.bytes2Long(upper));
-
-        return ints;
+        return new Pair<>(ints[0], ints[1]);
     }
 
-    public int getIndex(long key){
-        return binarySearch(index,key);
-    }
-
-    public void removeDuplicate(){
-        long tmp = index[0];
-        for (int i = 1; i < index.length; i++) {
-            if(tmp == index[i]){
-                index[i] = Long.MAX_VALUE;
-            }else{
-                tmp = index[i];
-            }
-        }
-    }
     private static int binarySearch(long[] arr, long x) {
         int low = 0;
         int high = arr.length - 1;
@@ -70,5 +56,9 @@ public class SortIndex {
             }
         }
         return mid; //返回与被查找数据最近的且大于它的值
+    }
+
+    public long[] getIndex() {
+        return index;
     }
 }
