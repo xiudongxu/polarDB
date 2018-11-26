@@ -27,6 +27,7 @@ public class RangeThread extends Thread {
             byte[] lower = ByteUtil.long2Bytes(1);
             byte[] upper = ByteUtil.long2Bytes(6400);
             engineRace.range(lower, upper, visitor);
+            engineRace.range(lower, upper, visitor);
         } finally {
             downLatch.countDown();
         }

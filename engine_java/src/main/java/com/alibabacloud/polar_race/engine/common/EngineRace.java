@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 
@@ -14,6 +15,8 @@ public class EngineRace extends AbstractEngine {
 
     private int writeCount = 0; //为了看日志，这些天提交一直没有有价值的日志
     private int readCount = 0;
+
+    private Object lock = new Object();
 
     private Data[] datas;
     private boolean ranged;
@@ -53,8 +56,6 @@ public class EngineRace extends AbstractEngine {
         if (readCount < 10) {
             System.out.println("read key value count :" + readCount);
             readCount++;
-        } else {
-            System.exit(0);
         }
 
         long keyL = ByteUtil.bytes2Long(key);
@@ -72,10 +73,18 @@ public class EngineRace extends AbstractEngine {
         System.out.println(
                 Thread.currentThread().getName() + " start range from:" + Arrays.toString(lower)
                         + " end:" + Arrays.toString(upper) + " " + LocalDateTime.now());
-        /*try {
-            if (!ranged) {
-                rangeBarrier.await();
+        if (!ranged) {
+            synchronized (lock) {
+                if (!ranged) {
+                    ranged = true;
+                    EngineBoot.loadDataToCachePool(cachePool, beginLoadBarrier, endLoadBarrier, loadDownLatch);
+                    totalKvCount = cachePool.getTotalKvCount().get();
+                }
             }
+        }
+
+        try {
+            rangeBarrier.await();
         } catch (InterruptedException | BrokenBarrierException e) {
             e.printStackTrace();
         }
@@ -110,7 +119,7 @@ public class EngineRace extends AbstractEngine {
             } catch (InterruptedException | BrokenBarrierException e) {
                 e.printStackTrace();
             }
-        }*/
+        }
     }
 
     @Override
@@ -128,14 +137,7 @@ public class EngineRace extends AbstractEngine {
 
     private CountDownLatch loadDownLatch = new  CountDownLatch(Constant.THREAD_COUNT + 1);
 
-    private CyclicBarrier rangeBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
-        @Override
-        public void run() {
-            ranged = true;
-            EngineBoot.loadDataToCachePool(cachePool, beginLoadBarrier, endLoadBarrier, loadDownLatch);
-            totalKvCount = cachePool.getTotalKvCount().get();
-        }
-    });
+    private CyclicBarrier rangeBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT);
 
     private CyclicBarrier beginLoadBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
         @Override
