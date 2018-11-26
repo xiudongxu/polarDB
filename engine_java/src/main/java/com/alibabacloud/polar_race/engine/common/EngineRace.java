@@ -53,6 +53,8 @@ public class EngineRace extends AbstractEngine {
         if (readCount < 10) {
             System.out.println("read key value count :" + readCount);
             readCount++;
+        } else {
+            System.exit(0);
         }
 
         long keyL = ByteUtil.bytes2Long(key);
