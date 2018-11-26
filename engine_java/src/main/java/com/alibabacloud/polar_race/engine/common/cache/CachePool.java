@@ -8,8 +8,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @version 2018-11-24
  */
 public class CachePool {
-    private int readCursor;
-    private int loadCursor;
+    private volatile int readCursor;
+    private volatile int loadCursor;
 
     private Data[] datas;
     private CacheBlock[] blocks;

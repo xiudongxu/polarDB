@@ -38,7 +38,7 @@ public class Test {
     }
 
     public static void readAndRange() {
-        CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT);
+        /*CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT);
         for (int i = 1; i <= Constant.THREAD_COUNT; i++) {
             new ReadData(i, downLatch).start();
         }
@@ -46,12 +46,17 @@ public class Test {
             downLatch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }
+        }*/
 
         long begin = System.currentTimeMillis();
-        downLatch = new CountDownLatch(Constant.THREAD_COUNT + 1);
+        CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT + 1);
         AbstractVisitor visitor = new VisitorImpl();
         new RangeData(visitor, downLatch).start();
+        try {
+            downLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         System.out.println("range data cost time:" + (System.currentTimeMillis() - begin));
     }

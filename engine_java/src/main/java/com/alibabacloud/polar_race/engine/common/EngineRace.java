@@ -5,7 +5,6 @@ import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import javafx.util.Pair;
@@ -71,20 +70,25 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
-        System.out.println(Thread.currentThread().getName() + " start range from:"
-                + Arrays.toString(lower) + " end:" + Arrays.toString(upper));
+        //System.out.println(Thread.currentThread().getName() + " start range from:" + Arrays.toString(lower) + " end:" + Arrays.toString(upper));
 
         if (!loaded) {
             synchronized (lock) {
                 if (!loaded) {
+                    cachePool.setReadCursor(0);
+                    cachePool.setLoadCursor(0);
                     EngineBoot.loadToCachePool(cachePool, beginLoadBarrier, endLoadBarrier);
                     loaded = true;
                 }
             }
         }
 
+        System.out.println(
+                "cache pool read cursor : " + cachePool.getReadCursor() + " load cursor : "
+                        + cachePool.getLoadCursor());
+
         Pair<Integer, Integer> pair = SortIndex.instance.range(lower, upper);
-        System.out.println("start range from:" + pair.getKey() + " end:" + pair.getValue());
+        //System.out.println("start range from:" + pair.getKey() + " end:" + pair.getValue());
         for (int i = pair.getKey(); i <= pair.getValue(); i += Constant.ONE_CACHE_SIZE) {
             try {
                 beginReadBarrier.await();
@@ -170,8 +174,6 @@ public class EngineRace extends AbstractEngine {
                 int newReadCursor = cachePool.getReadCursor() + Constant.ONE_CACHE_SIZE;
                 if (newReadCursor >= totalKvCount) {
                     loaded = false;
-                    cachePool.setReadCursor(0);
-                    cachePool.setLoadCursor(0);
                 } else {
                     cachePool.setReadCursor(newReadCursor);
                     cachePool.notify();
