@@ -17,6 +17,7 @@ public class EngineRace extends AbstractEngine {
     private Object lock = new Object();
     private Data[] datas;
     private boolean loaded;
+    private boolean sorted;
     private int totalKvCount;
     private CachePool cachePool;
 
@@ -28,11 +29,7 @@ public class EngineRace extends AbstractEngine {
         }
         try {
             datas = EngineBoot.initDataFile(path);
-            if (datas[0].getSubscript() > 0) {
-                cachePool = EngineBoot.initCachePool(datas);
-                EngineBoot.loadAndSortIndex(cachePool);
-                totalKvCount = cachePool.getTotalKvCount().get();
-            }
+            cachePool = EngineBoot.initCachePool(datas);
         } catch (InterruptedException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "init data file IO exception!!!");
         }
@@ -74,6 +71,11 @@ public class EngineRace extends AbstractEngine {
 
         if (!loaded) {
             synchronized (lock) {
+                if (!sorted) {
+                    EngineBoot.loadAndSortIndex(cachePool);
+                    totalKvCount = cachePool.getTotalKvCount().get();
+                    sorted = true;
+                }
                 if (!loaded) {
                     cachePool.setReadCursor(0);
                     cachePool.setLoadCursor(0);

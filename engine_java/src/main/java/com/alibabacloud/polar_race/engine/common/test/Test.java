@@ -21,7 +21,7 @@ public class Test {
         engineRace = new EngineRace();
         engineRace.open("/Users/wangshuo/polarDb/store");
 
-        //write();
+        write();
         readAndRange();
     }
 
@@ -38,7 +38,7 @@ public class Test {
     }
 
     public static void readAndRange() {
-        /*CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT);
+        CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT);
         for (int i = 1; i <= Constant.THREAD_COUNT; i++) {
             new ReadData(i, downLatch).start();
         }
@@ -46,14 +46,14 @@ public class Test {
             downLatch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }*/
+        }
 
         long begin = System.currentTimeMillis();
-        CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT + 1);
+        CountDownLatch downLatch1 = new CountDownLatch(Constant.THREAD_COUNT + 1);
         AbstractVisitor visitor = new VisitorImpl();
-        new RangeData(visitor, downLatch).start();
+        new RangeData(visitor, downLatch1).start();
         try {
-            downLatch.await();
+            downLatch1.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
