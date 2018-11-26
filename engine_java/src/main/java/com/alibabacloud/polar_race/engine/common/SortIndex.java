@@ -2,7 +2,6 @@ package com.alibabacloud.polar_race.engine.common;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
-import javafx.util.Pair;
 
 /**
  * @author dongxu.xiu
@@ -34,11 +33,11 @@ public class SortIndex {
         Arrays.sort(index);
     }
 
-    public Pair<Integer, Integer> range(byte[] lower,byte[] upper) {
+    public int[] range(byte[] lower,byte[] upper) {
         int[] ints = new int[2];
         ints[0] = lower == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(lower));
         ints[1] = upper == null ? index.length - 1 : binarySearch(index, ByteUtil.bytes2Long(upper));
-        return new Pair<>(ints[0], ints[1]);
+        return ints;
     }
 
     private static int binarySearch(long[] arr, long x) {

@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import javafx.util.Pair;
 
 public class EngineRace extends AbstractEngine {
 
@@ -85,9 +84,9 @@ public class EngineRace extends AbstractEngine {
         }
 
         //System.out.println("cache pool read cursor : " + cachePool.getReadCursor() + " load cursor : " + cachePool.getLoadCursor());
-        Pair<Integer, Integer> pair = SortIndex.instance.range(lower, upper);
+        int[] range = SortIndex.instance.range(lower, upper);
         //System.out.println("start range from:" + pair.getKey() + " end:" + pair.getValue());
-        for (int i = pair.getKey(); i <= pair.getValue(); i += Constant.ONE_CACHE_SIZE) {
+        for (int i = range[0]; i <= range[1]; i += Constant.ONE_CACHE_SIZE) {
             try {
                 beginReadBarrier.await();
             } catch (InterruptedException | BrokenBarrierException e) {
