@@ -172,7 +172,6 @@ public class EngineRace extends AbstractEngine {
                     loaded = false;
                     cachePool.setReadCursor(0);
                     cachePool.setLoadCursor(0);
-                    cachePool.notify();
                 } else {
                     cachePool.setReadCursor(newReadCursor);
                     cachePool.notify();
