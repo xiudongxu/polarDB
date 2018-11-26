@@ -5,6 +5,7 @@ import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -68,7 +69,9 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
-        System.out.println("start range from:" + Arrays.toString(lower) + " end:" + Arrays.toString(upper));
+        System.out.println(
+                Thread.currentThread().getName() + " start range from:" + Arrays.toString(lower)
+                        + " end:" + Arrays.toString(upper) + " " + LocalDateTime.now());
         /*try {
             if (!ranged) {
                 rangeBarrier.await();
