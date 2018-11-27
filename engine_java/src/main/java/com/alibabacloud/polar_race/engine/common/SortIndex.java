@@ -33,10 +33,10 @@ public class SortIndex {
         Arrays.sort(index);
     }
 
-    public int[] range(byte[] lower,byte[] upper) {
+    public int[] range(byte[] lower,byte[] upper, int totalKvCount) {
         int[] ints = new int[2];
         ints[0] = lower == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(lower));
-        ints[1] = upper == null ? index.length - 1 : binarySearch(index, ByteUtil.bytes2Long(upper));
+        ints[1] = upper == null ? totalKvCount : binarySearch(index, ByteUtil.bytes2Long(upper));
         return ints;
     }
 

@@ -11,9 +11,6 @@ import java.util.concurrent.CyclicBarrier;
 
 public class EngineRace extends AbstractEngine {
 
-    private int writeCount = 0; //为了看日志，这些天提交一直没有有价值的日志
-    private int readCount = 0;
-
     private Object lock = new Object();
     private Data[] datas;
     private boolean loaded;
@@ -37,11 +34,6 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void write(byte[] key, byte[] value) throws EngineException {
-        if (writeCount < 10) {
-            System.out.println("write key value count :" + writeCount);
-            writeCount++;
-        }
-
         long keyL = ByteUtil.bytes2Long(key);
         int modulus = (int) (keyL & (datas.length - 1));
         Data data = datas[modulus];
@@ -50,11 +42,6 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public byte[] read(byte[] key) throws EngineException {
-        if (readCount < 10) {
-            System.out.println("read key value count :" + readCount);
-            readCount++;
-        }
-
         long keyL = ByteUtil.bytes2Long(key);
         int modulus = (int) (keyL & (datas.length - 1));
         Data data = datas[modulus];
@@ -75,6 +62,10 @@ public class EngineRace extends AbstractEngine {
                     EngineBoot.loadAndSortIndex(cachePool);
                     totalKvCount = cachePool.getTotalKvCount().get();
                     sorted = true;
+                    System.out.println("打印排好序的前20个key");
+                    for (int i = 0; i < 20; i++) {
+                        System.out.println("第 "+ i +" 个 key ：" + SortIndex.instance.get(i));
+                    }
                 }
                 if (!loaded) {
                     cachePool.setReadCursor(0);
@@ -85,9 +76,12 @@ public class EngineRace extends AbstractEngine {
             }
         }
 
-        //System.out.println("cache pool read cursor : " + cachePool.getReadCursor() + " load cursor : " + cachePool.getLoadCursor());
-        int[] range = SortIndex.instance.range(lower, upper);
-        //System.out.println("start range from:" + pair.getKey() + " end:" + pair.getValue());
+        try {
+            rangeBarrier.await(); // wait finish load cache
+        } catch (InterruptedException | BrokenBarrierException e) {
+            e.printStackTrace();
+        }
+        int[] range = SortIndex.instance.range(lower, upper, totalKvCount);
         for (int i = range[0]; i <= range[1]; i += Constant.ONE_CACHE_SIZE) {
             try {
                 beginReadBarrier.await();
@@ -105,7 +99,6 @@ public class EngineRace extends AbstractEngine {
                 byte[] value = cachePool.getBlocks()[blockIndex].getMaps()[mapIndex].get(key);
                 visitor.visit(ByteUtil.long2Bytes(key), value);
             }
-            System.out.println("now read cursor:" + i);
 
             try {
                 endReadBarrier.await();
@@ -123,6 +116,8 @@ public class EngineRace extends AbstractEngine {
             System.out.println("close file resource error");
         }
     }
+
+    private CyclicBarrier rangeBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT);
 
     private CyclicBarrier beginLoadBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
         @Override
