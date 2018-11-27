@@ -29,10 +29,17 @@ public class LoadIndexThread extends Thread {
             long[] keys = data.getMap().keys;
             for (int i = 0; i < keys.length; i++) {
                 if (keys[i] == 0) continue;
-                if (keys[i] < 0) negativeCount++;
+                if (keys[i] < 0) {
+                    negativeCount++;
+                }
                 SortIndex.instance.set(keys[i]);
                 totalCount++;
             }
+
+            String name = Thread.currentThread().getName();
+            System.out.println(
+                    "thread name: " + name + " keys count: " + keys.length + " totalCount: "
+                            + totalCount + " negative count: " + negativeCount);
             cachePool.addNegative(negativeCount);
             cachePool.addTotal(totalCount);
         } finally {

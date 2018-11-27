@@ -29,13 +29,15 @@ public class SortIndex {
 
     public void sort(int totalKvCount, int negativeCount){
         Arrays.sort(index);
-        long[] negatives = Arrays.copyOfRange(index, 0, negativeCount);
+
+
+        /*long[] negatives = Arrays.copyOfRange(index, 0, negativeCount);
         index = Arrays.copyOfRange(index, negativeCount, totalKvCount);
         Arrays.copyOf(index, totalKvCount);
         int tmp = negativeCount - 1;
         for (int i = totalKvCount - negativeCount; i < totalKvCount; i++) {
             index[i] = negatives[tmp--];
-        }
+        }*/
     }
 
     /*private Comparator<Long> cmp = (o1, o2) -> {
