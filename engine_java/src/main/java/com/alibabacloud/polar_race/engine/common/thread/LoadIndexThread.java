@@ -33,8 +33,13 @@ public class LoadIndexThread extends Thread {
                 if (keys[i] < 0) negativeCount++;
                 SmartSortIndex.instance.set(keys[i]);
                 //SortIndex.instance.set(keys[i]);
+                SortIndex.instance.set(keys[i]);
                 totalCount++;
             }
+            String name = Thread.currentThread().getName();
+            System.out.println(
+                    "thread name: " + name + " keys count: " + keys.length + " totalCount: "
+                            + totalCount + " negative count: " + negativeCount);
             cachePool.addNegative(negativeCount);
             cachePool.addTotal(totalCount);
         } finally {
