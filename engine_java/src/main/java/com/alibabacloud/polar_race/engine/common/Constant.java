@@ -25,7 +25,7 @@ public interface Constant {
 
     byte RANGE_THREAD_COUNT = THREAD_COUNT;
 
-    int BLOCK_SIZE = 1000;
+    int BLOCK_SIZE = 500;
 
     int MAPS_PER_BLOCK = 2;
 
