@@ -1,6 +1,7 @@
 package com.alibabacloud.polar_race.engine.common.thread;
 
 import com.alibabacloud.polar_race.engine.common.Data;
+import com.alibabacloud.polar_race.engine.common.SmartSortIndex;
 import com.alibabacloud.polar_race.engine.common.SortIndex;
 import com.alibabacloud.polar_race.engine.common.cache.CachePool;
 import java.util.concurrent.CountDownLatch;
@@ -30,7 +31,8 @@ public class LoadIndexThread extends Thread {
             for (int i = 0; i < keys.length; i++) {
                 if (keys[i] == 0) continue;
                 if (keys[i] < 0) negativeCount++;
-                SortIndex.instance.set(keys[i]);
+                SmartSortIndex.instance.set(keys[i]);
+                //SortIndex.instance.set(keys[i]);
                 totalCount++;
             }
             cachePool.addNegative(negativeCount);

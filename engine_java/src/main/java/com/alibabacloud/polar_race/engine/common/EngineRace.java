@@ -88,7 +88,8 @@ public class EngineRace extends AbstractEngine {
             int tmpEnd = i + Constant.ONE_CACHE_SIZE;
             int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
             for (int readIndex = i; readIndex < endIndex; readIndex++) {
-                long keyL = SortIndex.instance.get(readIndex);
+                //long keyL = SortIndex.instance.get(readIndex);
+                long keyL = SmartSortIndex.instance.get(readIndex);
                 int blockIndex = (readIndex % Constant.ONE_CACHE_SIZE) / Constant.BLOCK_SIZE;
                 int mapIndex = (readIndex / Constant.ONE_CACHE_SIZE) & (Constant.MAPS_PER_BLOCK - 1);
                 byte[] value = cachePool.getBlocks()[blockIndex].getMaps()[mapIndex].get(keyL);
