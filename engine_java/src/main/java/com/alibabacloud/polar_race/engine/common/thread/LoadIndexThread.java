@@ -2,7 +2,6 @@ package com.alibabacloud.polar_race.engine.common.thread;
 
 import com.alibabacloud.polar_race.engine.common.Data;
 import com.alibabacloud.polar_race.engine.common.SmartSortIndex;
-import com.alibabacloud.polar_race.engine.common.SortIndex;
 import com.alibabacloud.polar_race.engine.common.cache.CachePool;
 import java.util.concurrent.CountDownLatch;
 

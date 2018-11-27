@@ -29,7 +29,7 @@ public class SmartSortIndex {
     }
 
     public int calcuIndex(int index) {
-        return index + 1 > plusNum ? limit - (index + 1 - plusNum) : index + limit;
+        return index + 1 > plusNum ? index - plusNum : index + limit;
     }
 
     public void set(long element) {
