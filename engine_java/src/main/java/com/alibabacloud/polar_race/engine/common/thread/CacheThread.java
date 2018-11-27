@@ -1,6 +1,5 @@
 package com.alibabacloud.polar_race.engine.common.thread;
 
-import com.alibabacloud.polar_race.engine.common.ByteUtil;
 import com.alibabacloud.polar_race.engine.common.Constant;
 import com.alibabacloud.polar_race.engine.common.Data;
 import com.alibabacloud.polar_race.engine.common.SortIndex;
@@ -68,9 +67,7 @@ public class CacheThread extends Thread {
         LongObjectHashMap<byte[]> map = block.getMaps()[mapIndex];
         map.clear();
         for (int i = startIndex; i < endIndex; i++) {
-            byte[] key = SortIndex.instance.get(i);
-            // TODO: 2018/11/27 byte[] to long
-            long keyL = ByteUtil.bytes2Long(key);
+            long keyL = SortIndex.instance.get(i);
             int modulus = (int) (keyL & (datas.length - 1));
             Data data = datas[modulus];
             try {

@@ -15,10 +15,19 @@ public class CachePool {
     private CacheBlock[] blocks;
 
     private AtomicInteger totalKvCount = new AtomicInteger(0);
+    private AtomicInteger negativeCount = new AtomicInteger(0);
 
     public CachePool(Data[] datas, CacheBlock[] blocks) {
         this.datas = datas;
         this.blocks = blocks;
+    }
+
+    public void addNegative(int count) {
+        negativeCount.getAndAdd(count);
+    }
+
+    public AtomicInteger getNegativeCount() {
+        return negativeCount;
     }
 
     public AtomicInteger getTotalKvCount() {

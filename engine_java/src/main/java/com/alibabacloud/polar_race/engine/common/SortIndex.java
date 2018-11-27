@@ -1,7 +1,6 @@
 package com.alibabacloud.polar_race.engine.common;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -12,35 +11,46 @@ public class SortIndex {
 
     public static SortIndex instance = new SortIndex();
     private volatile AtomicInteger atomicInteger;
-    private volatile byte[][] index;
-    private Comparator<byte[]> cmp = (o1, o2) -> {
-        int length = o1.length;
+    private volatile long[] index;
+
+    private SortIndex() {
+        this.atomicInteger = new AtomicInteger(0);
+        index = new long[Constant.TOTAL_KV_COUNT];
+        Arrays.fill(index, Long.MAX_VALUE);
+    }
+
+    public void set(long key){
+        index[atomicInteger.getAndIncrement()] = key;
+    }
+
+    public long get(int i){
+        return index[i];
+    }
+
+    public void sort(int totalKvCount, int negativeCount){
+        Arrays.sort(index);
+        long[] negatives = Arrays.copyOfRange(index, 0, negativeCount);
+        index = Arrays.copyOfRange(index, negativeCount, totalKvCount);
+        Arrays.copyOf(index, totalKvCount);
+        int tmp = negativeCount - 1;
+        for (int i = totalKvCount - negativeCount; i < totalKvCount; i++) {
+            index[i] = negatives[tmp--];
+        }
+    }
+
+    /*private Comparator<Long> cmp = (o1, o2) -> {
+        byte[] byte1 = ByteUtil.long2Bytes(o1);
+        byte[] byte2 = ByteUtil.long2Bytes(o2);
+        int length = byte1.length;
         for (int i = 0; i < length; i++) {
-            int thisByte = o1[i] & 0xff;
-            int thatByte = o2[i] & 0xff;
+            int thisByte = byte1[i] & 0xff;
+            int thatByte = byte2[i] & 0xff;
             if (thisByte != thatByte) {
                 return thisByte - thatByte;
             }
         }
         return 0;
-    };
-
-    private SortIndex() {
-        this.atomicInteger = new AtomicInteger(0);
-        index = new byte[Constant.TOTAL_KV_COUNT][Constant.KEY_SIZE];
-        Arrays.fill(index, Long.MIN_VALUE);
-    }
-
-    public void set(byte[] key){
-        index[atomicInteger.getAndIncrement()] = key;
-    }
-
-    public byte[] get(int i){
-        return index[i];
-    }
-    public void sort(){
-        Arrays.sort(index, cmp);
-    }
+    };*/
 
     /*public static void main(String[] args) {
         Comparator<byte[]> cmp = (o1, o2) -> {
@@ -93,7 +103,7 @@ public class SortIndex {
         return mid; //返回与被查找数据最近的且大于它的值
     }*/
 
-    public byte[][] getIndex() {
+    public long[] getIndex() {
         return index;
     }
 }

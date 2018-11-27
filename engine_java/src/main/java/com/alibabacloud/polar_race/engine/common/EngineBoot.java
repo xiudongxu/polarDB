@@ -50,7 +50,7 @@ public class EngineBoot {
             System.out.println("load index down latch await error");
         }
         System.out.println("load index finish; start sort index at " + LocalDateTime.now());
-        SortIndex.instance.sort();
+        SortIndex.instance.sort(cachePool.getTotalKvCount().get(), cachePool.getNegativeCount().get());
         System.out.println("finish sort index at " + LocalDateTime.now());
     }
 
