@@ -25,7 +25,7 @@ public class CachePool {
         return totalKvCount;
     }
 
-    public void add(int count) {
+    public void addTotal(int count) {
         totalKvCount.getAndAdd(count);
     }
 

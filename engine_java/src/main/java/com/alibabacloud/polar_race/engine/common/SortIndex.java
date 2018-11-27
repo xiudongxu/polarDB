@@ -1,6 +1,7 @@
 package com.alibabacloud.polar_race.engine.common;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -10,30 +11,65 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SortIndex {
 
     public static SortIndex instance = new SortIndex();
-
     private volatile AtomicInteger atomicInteger;
-    private volatile long[] index;
-
-    private SortIndex(){
-        this.atomicInteger = new AtomicInteger(0);
-        index = new long[Constant.TOTAL_KV_COUNT];
-        for (int i = 0; i < index.length; i++) {
-            index[i] = Long.MAX_VALUE;
+    private volatile byte[][] index;
+    private Comparator<byte[]> cmp = (o1, o2) -> {
+        int length = o1.length;
+        for (int i = 0; i < length; i++) {
+            int thisByte = o1[i] & 0xff;
+            int thatByte = o2[i] & 0xff;
+            if (thisByte != thatByte) {
+                return thisByte - thatByte;
+            }
         }
+        return 0;
+    };
+
+    private SortIndex() {
+        this.atomicInteger = new AtomicInteger(0);
+        index = new byte[Constant.TOTAL_KV_COUNT][Constant.KEY_SIZE];
+        Arrays.fill(index, Long.MIN_VALUE);
     }
 
-    public void set(long key){
+    public void set(byte[] key){
         index[atomicInteger.getAndIncrement()] = key;
     }
 
-    public long get(int i){
+    public byte[] get(int i){
         return index[i];
     }
     public void sort(){
-        Arrays.sort(index);
+        Arrays.sort(index, cmp);
     }
 
-    public int[] range(byte[] lower,byte[] upper, int totalKvCount) {
+    /*public static void main(String[] args) {
+        Comparator<byte[]> cmp = (o1, o2) -> {
+            int length = o1.length;
+            for (int i = 0; i < length; i++) {
+                int thisByte = o1[i] & 0xff;
+                int thatByte = o2[i] & 0xff;
+                if (thisByte != thatByte) {
+                    return thisByte - thatByte;
+                }
+            }
+            return 0;
+        };
+        byte[][] bytes = new byte[6][2];
+        bytes[0] = new byte[]{(byte)0x80, -5};
+        bytes[1] = new byte[]{(byte)0x80, -8};
+        bytes[2] = new byte[]{(byte)0x00, 0};
+        bytes[3] = new byte[]{(byte)0x00, 7};
+        bytes[4] = new byte[]{(byte)0x00, 8};
+        bytes[5] = new byte[]{(byte)0x00, 5};
+
+        Arrays.sort(bytes, cmp);
+        for (int i = 0; i < 6; i++) {
+            System.out.println(bytes[i]);
+        }
+    }*/
+
+
+    /*public int[] range(byte[] lower,byte[] upper, int totalKvCount) {
         int[] ints = new int[2];
         ints[0] = lower == null ? 0 : binarySearch(index, ByteUtil.bytes2Long(lower));
         ints[1] = upper == null ? totalKvCount : binarySearch(index, ByteUtil.bytes2Long(upper));
@@ -55,9 +91,9 @@ public class SortIndex {
             }
         }
         return mid; //返回与被查找数据最近的且大于它的值
-    }
+    }*/
 
-    public long[] getIndex() {
+    public byte[][] getIndex() {
         return index;
     }
 }

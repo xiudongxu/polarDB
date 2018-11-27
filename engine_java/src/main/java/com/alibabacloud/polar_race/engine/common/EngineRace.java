@@ -62,10 +62,6 @@ public class EngineRace extends AbstractEngine {
                     EngineBoot.loadAndSortIndex(cachePool);
                     totalKvCount = cachePool.getTotalKvCount().get();
                     sorted = true;
-                    System.out.println("打印排好序的前20个key");
-                    for (int i = 0; i < 20; i++) {
-                        System.out.println("第 "+ i +" 个 key ：" + SortIndex.instance.get(i));
-                    }
                 }
                 if (!loaded) {
                     cachePool.setReadCursor(0);
@@ -81,8 +77,8 @@ public class EngineRace extends AbstractEngine {
         } catch (InterruptedException | BrokenBarrierException e) {
             e.printStackTrace();
         }
-        int[] range = SortIndex.instance.range(lower, upper, totalKvCount);
-        for (int i = range[0]; i <= range[1]; i += Constant.ONE_CACHE_SIZE) {
+
+        for (int i = 0; i <= totalKvCount; i += Constant.ONE_CACHE_SIZE) {
             try {
                 beginReadBarrier.await();
             } catch (InterruptedException | BrokenBarrierException e) {
@@ -92,12 +88,12 @@ public class EngineRace extends AbstractEngine {
             int tmpEnd = i + Constant.ONE_CACHE_SIZE;
             int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
             for (int readIndex = i; readIndex < endIndex; readIndex++) {
-                long key = SortIndex.instance.get(readIndex);
+                long keyL = ByteUtil.bytes2Long(SortIndex.instance.get(readIndex));
 
                 int blockIndex = (readIndex % Constant.ONE_CACHE_SIZE) / Constant.BLOCK_SIZE;
                 int mapIndex = (readIndex / Constant.ONE_CACHE_SIZE) & (Constant.MAPS_PER_BLOCK - 1);
-                byte[] value = cachePool.getBlocks()[blockIndex].getMaps()[mapIndex].get(key);
-                visitor.visit(ByteUtil.long2Bytes(key), value);
+                byte[] value = cachePool.getBlocks()[blockIndex].getMaps()[mapIndex].get(keyL);
+                visitor.visit(ByteUtil.long2Bytes(keyL), value);
             }
 
             try {

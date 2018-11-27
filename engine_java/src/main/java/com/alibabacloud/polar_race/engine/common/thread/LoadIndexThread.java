@@ -1,5 +1,6 @@
 package com.alibabacloud.polar_race.engine.common.thread;
 
+import com.alibabacloud.polar_race.engine.common.ByteUtil;
 import com.alibabacloud.polar_race.engine.common.Data;
 import com.alibabacloud.polar_race.engine.common.SortIndex;
 import com.alibabacloud.polar_race.engine.common.cache.CachePool;
@@ -28,10 +29,10 @@ public class LoadIndexThread extends Thread {
             long[] keys = data.getMap().keys;
             for (int i = 0; i < keys.length; i++) {
                 if (keys[i] == 0) continue;
-                SortIndex.instance.set(keys[i]);
+                SortIndex.instance.set(ByteUtil.long2Bytes(keys[i]));
                 totalCount++;
             }
-            cachePool.add(totalCount);
+            cachePool.addTotal(totalCount);
         } finally {
             downLatch.countDown();
         }
