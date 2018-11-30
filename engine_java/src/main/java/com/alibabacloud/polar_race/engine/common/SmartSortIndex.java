@@ -5,39 +5,46 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SmartSortIndex {
 
-
-    public static SmartSortIndex instance = new SmartSortIndex();
-
-    private long[] sortIndexs = new long[Constant.TOTAL_KV_COUNT];
-
     private int limit;
 
     private int plusNum = 0;
 
+    public static SmartSortIndex instance = new SmartSortIndex();
+
+    private long[] sortIndex = new long[Constant.TOTAL_KV_COUNT];
+
     private AtomicInteger index = new AtomicInteger(0);
 
+    private AtomicInteger negativeCount = new AtomicInteger(0);
+
     private SmartSortIndex() {
-        for (int i = 0; i < sortIndexs.length; i++) {
-            sortIndexs[i] = Long.MAX_VALUE;
-        }
+        Arrays.fill(sortIndex, Long.MAX_VALUE);
     }
 
-    public void sort(int negative) {
-        Arrays.sort(sortIndexs);
-        this.limit = negative;
+    public void sort() {
+        //Arrays.parallelSort(sortIndex);
+        Arrays.sort(sortIndex);
+        this.limit = negativeCount.get();
         plusNum = index.get() - this.limit;
     }
 
-    public int calcuIndex(int index) {
+    public int calcIndex(int index) {
         return index + 1 > plusNum ? index - plusNum : index + limit;
     }
 
     public void set(long element) {
-        sortIndexs[index.getAndIncrement()] = element;
+        sortIndex[index.getAndIncrement()] = element;
     }
 
     public long get(int index) {
-        return sortIndexs[calcuIndex(index)];
+        return sortIndex[calcIndex(index)];
     }
 
+    public void negativeAdd(int count) {
+        negativeCount.getAndAdd(count);
+    }
+
+    public int getTotalKvCount() {
+        return index.get();
+    }
 }

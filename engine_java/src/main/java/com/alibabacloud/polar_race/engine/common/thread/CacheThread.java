@@ -1,13 +1,8 @@
 package com.alibabacloud.polar_race.engine.common.thread;
 
-import com.alibabacloud.polar_race.engine.common.Constant;
 import com.alibabacloud.polar_race.engine.common.Data;
-import com.alibabacloud.polar_race.engine.common.SmartSortIndex;
-import com.alibabacloud.polar_race.engine.common.SortIndex;
 import com.alibabacloud.polar_race.engine.common.cache.CacheBlock;
 import com.alibabacloud.polar_race.engine.common.cache.CachePool;
-import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
-import com.carrotsearch.hppc.LongObjectHashMap;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
@@ -59,7 +54,7 @@ public class CacheThread extends Thread {
     }
 
     private void doLoad(int loadCursor) {
-        int startIndex = loadCursor + threadNum * Constant.BLOCK_SIZE;
+        /*int startIndex = loadCursor + threadNum * Constant.BLOCK_SIZE;
         if (startIndex >= totalKvCount) return;
 
         int tmpEnd = startIndex + Constant.BLOCK_SIZE;
@@ -78,6 +73,6 @@ public class CacheThread extends Thread {
             } catch (EngineException e) {
                 System.out.println("during load to cache : read value IO exception!!!");
             }
-        }
+        }*/
     }
 }

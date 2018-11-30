@@ -139,4 +139,8 @@ public class Data {
     public int getSubscript() {
         return subscript;
     }
+
+    public MappedByteBuffer getKeyMapperByteBuffer() {
+        return keyMapperByteBuffer;
+    }
 }

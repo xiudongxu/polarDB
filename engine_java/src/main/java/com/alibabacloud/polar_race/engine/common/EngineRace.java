@@ -1,12 +1,14 @@
 package com.alibabacloud.polar_race.engine.common;
 
-import com.alibabacloud.polar_race.engine.common.cache.CachePool;
+import com.alibabacloud.polar_race.engine.common.cache.CacheSlot;
+import com.alibabacloud.polar_race.engine.common.cache.RingCachePool;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
+import com.carrotsearch.hppc.LongObjectHashMap;
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class EngineRace extends AbstractEngine {
 
@@ -15,7 +17,8 @@ public class EngineRace extends AbstractEngine {
     private boolean loaded;
     private boolean sorted;
     private int totalKvCount;
-    private CachePool cachePool;
+    private RingCachePool ringCachePool;
+    private ExecutorService executorService;
 
     @Override
     public void open(String path) throws EngineException {
@@ -25,7 +28,6 @@ public class EngineRace extends AbstractEngine {
         }
         try {
             datas = EngineBoot.initDataFile(path);
-            cachePool = EngineBoot.initCachePool(datas);
         } catch (InterruptedException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "init data file IO exception!!!");
         }
@@ -53,123 +55,58 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void range(byte[] lower, byte[] upper, AbstractVisitor visitor) {
-        //System.out.println(Thread.currentThread().getName() + " start range from:" + Arrays.toString(lower) + " end:" + Arrays.toString(upper));
-
         if (!loaded) {
             synchronized (lock) {
                 if (!sorted) {
-                    EngineBoot.loadAndSortIndex(cachePool);
-                    totalKvCount = cachePool.getTotalKvCount().get();
+                    EngineBoot.releaseMappedBuffer(datas);
+                    EngineBoot.loadAndSortIndex(datas);
+                    totalKvCount = SmartSortIndex.instance.getTotalKvCount();
                     sorted = true;
                 }
                 if (!loaded) {
-                    cachePool.setReadCursor(0);
-                    cachePool.setLoadCursor(0);
-                    EngineBoot.loadToCachePool(cachePool, beginLoadBarrier, endLoadBarrier);
+                    ringCachePool = EngineBoot.initRingCache(datas);
+                    executorService = Executors.newFixedThreadPool(Constant.THREAD_COUNT);
+                    EngineBoot.loadToCachePool(ringCachePool, executorService);
                     loaded = true;
                 }
             }
         }
 
-        try {
-            rangeBarrier.await(); // wait finish load cache
-        } catch (InterruptedException | BrokenBarrierException e) {
-            e.printStackTrace();
+        for (int i = 0; i < totalKvCount; i += Constant.SLOT_SIZE) {
+            int slotCursor = i / Constant.SLOT_SIZE % Constant.SLOT_COUNT;
+            CacheSlot cacheSlot = ringCachePool.getCacheSlots()[slotCursor];
+            doRange(cacheSlot, i, visitor);
         }
+    }
 
-        for (int i = 0; i <= totalKvCount; i += Constant.ONE_CACHE_SIZE) {
-            try {
-                beginReadBarrier.await();
-            } catch (InterruptedException | BrokenBarrierException e) {
-                e.printStackTrace();
+    private void doRange(CacheSlot cacheSlot, int startIndex, AbstractVisitor visitor) {
+        int generation = startIndex / Constant.CACHE_SIZE + 1;
+        for (;;) {
+            if (generation != cacheSlot.getSlotStatus()) {
+                continue;
             }
-
-            int tmpEnd = i + Constant.ONE_CACHE_SIZE;
+            int tmpEnd = startIndex + Constant.SLOT_SIZE;
             int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
-            for (int readIndex = i; readIndex < endIndex; readIndex++) {
-                //long keyL = SortIndex.instance.get(readIndex);
-                long keyL = SmartSortIndex.instance.get(readIndex);
-                int blockIndex = (readIndex % Constant.ONE_CACHE_SIZE) / Constant.BLOCK_SIZE;
-                int mapIndex = (readIndex / Constant.ONE_CACHE_SIZE) & (Constant.MAPS_PER_BLOCK - 1);
-                byte[] value = cachePool.getBlocks()[blockIndex].getMaps()[mapIndex].get(keyL);
+            for (int j = startIndex; j < endIndex; j++) {
+                LongObjectHashMap<byte[]> map = cacheSlot.getMap();
+                long keyL = SmartSortIndex.instance.get(j);
+                byte[] value = map.get(keyL);
                 visitor.visit(ByteUtil.long2Bytes(keyL), value);
             }
-
-            try {
-                endReadBarrier.await();
-            } catch (InterruptedException | BrokenBarrierException e) {
-                e.printStackTrace();
-            }
+            cacheSlot.addReadCount(startIndex + Constant.CACHE_SIZE >= totalKvCount);
+            break;
         }
     }
 
     @Override
     public void close() {
         try {
+            EngineBoot.stopLoadCacheThread(executorService);
             EngineBoot.closeDataFile(datas);
         } catch (IOException e) {
             System.out.println("close file resource error");
         }
     }
-
-    private CyclicBarrier rangeBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT);
-
-    private CyclicBarrier beginLoadBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
-        @Override
-        public void run() {
-            synchronized (cachePool) {
-                if (Constant.CACHE_CAP - (cachePool.getLoadCursor() - cachePool.getReadCursor()) <= 0) {
-                    try {
-                        cachePool.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-    });
-
-    private CyclicBarrier endLoadBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
-        @Override
-        public void run() {
-            synchronized (cachePool) {
-                int newLoadCursor = cachePool.getLoadCursor() + Constant.ONE_CACHE_SIZE;
-                newLoadCursor = newLoadCursor >= totalKvCount ? totalKvCount : newLoadCursor;
-                cachePool.setLoadCursor(newLoadCursor);
-                cachePool.notify();
-            }
-        }
-    });
-
-    private CyclicBarrier beginReadBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
-        @Override
-        public void run() {
-            synchronized (cachePool) {
-                if (cachePool.getReadCursor() - cachePool.getLoadCursor() >= 0) {
-                    try {
-                        cachePool.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-    });
-
-    private CyclicBarrier endReadBarrier = new CyclicBarrier(Constant.RANGE_THREAD_COUNT, new Runnable() {
-        @Override
-        public void run() {
-            synchronized (cachePool) {
-                int newReadCursor = cachePool.getReadCursor() + Constant.ONE_CACHE_SIZE;
-                if (newReadCursor >= totalKvCount) {
-                    loaded = false;
-                } else {
-                    cachePool.setReadCursor(newReadCursor);
-                    cachePool.notify();
-                }
-            }
-        }
-    });
 
     public Data[] getDatas() {
         return datas;
