@@ -72,14 +72,16 @@ public class EngineRace extends AbstractEngine {
             }
         }
 
+        int readSlotCursor = ThreadContext.getReadCursor();
         for (int i = 0; i < totalKvCount; i += Constant.SLOT_SIZE) {
-            int slotCursor = i / Constant.SLOT_SIZE % Constant.SLOT_COUNT;
-            CacheSlot cacheSlot = ringCachePool.getCacheSlots()[slotCursor];
-            doRange(cacheSlot, i, visitor);
+            int realCursor = readSlotCursor % Constant.SLOT_COUNT;
+            CacheSlot cacheSlot = ringCachePool.getCacheSlots()[realCursor];
+            doRange(cacheSlot, i, visitor, readSlotCursor);
+            readSlotCursor++;
         }
     }
 
-    private void doRange(CacheSlot cacheSlot, int startIndex, AbstractVisitor visitor) {
+    private void doRange(CacheSlot cacheSlot, int startIndex, AbstractVisitor visitor, int readCursor) {
         int generation = startIndex / Constant.CACHE_SIZE + 1;
         for (;;) {
             if (generation != cacheSlot.getSlotStatus()) {
@@ -93,7 +95,7 @@ public class EngineRace extends AbstractEngine {
                 byte[] value = map.get(keyL);
                 visitor.visit(ByteUtil.long2Bytes(keyL), value);
             }
-            cacheSlot.addReadCount(startIndex + Constant.CACHE_SIZE >= totalKvCount);
+            cacheSlot.addReadCount(startIndex, endIndex, readCursor);
             break;
         }
     }

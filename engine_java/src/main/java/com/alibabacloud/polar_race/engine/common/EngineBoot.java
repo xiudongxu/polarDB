@@ -50,7 +50,7 @@ public class EngineBoot {
         RingCachePool cachePool = new RingCachePool(datas);
         CacheSlot[] cacheSlots = cachePool.getCacheSlots();
         for (int i = 0; i < Constant.SLOT_COUNT; i++) {
-            cacheSlots[i] = new CacheSlot();
+            cacheSlots[i] = new CacheSlot(cachePool);
         }
         return cachePool;
     }

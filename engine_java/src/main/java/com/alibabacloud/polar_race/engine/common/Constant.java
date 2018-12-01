@@ -35,7 +35,7 @@ public interface Constant {
 
     int SLOT_COUNT = 128;
 
-    int SLOT_SIZE = 2500;
+    int SLOT_SIZE = 3000;
 
     int CACHE_SIZE = SLOT_COUNT * SLOT_SIZE;
 

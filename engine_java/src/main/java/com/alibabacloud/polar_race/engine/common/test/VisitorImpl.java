@@ -23,7 +23,7 @@ public class VisitorImpl extends AbstractVisitor {
             }
             //System.out.println("thread name:" + Thread.currentThread().getName() + " key:" + ByteUtil.bytes2Long(key) + " " + Arrays.equals(key, prefixValue) + " " + integer.getAndIncrement());
         } catch (Exception e) {
-            System.out.println("key:......................." + ByteUtil.bytes2Long(key));
+            System.out.println("thread name:" + Thread.currentThread().getName() + " key: "  + ByteUtil.bytes2Long(key));
             e.printStackTrace();
         }
 

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CacheSlotThread extends Thread {
 
     private Data[] datas;
+    private int totalSlot;
     private int totalKvCount;
     private RingCachePool cachePool;
     private AtomicInteger slotCursor;
@@ -24,22 +25,26 @@ public class CacheSlotThread extends Thread {
         this.datas = cachePool.getDatas();
         this.slotCursor = cachePool.getSlotCursor();
         this.totalKvCount = SmartSortIndex.instance.getTotalKvCount();
+        int temp = totalKvCount / Constant.SLOT_SIZE;
+        totalSlot = totalKvCount % Constant.SLOT_SIZE == 0 ? temp : temp + 1;
     }
 
     @Override
     public void run() {
-        int slotCursor = this.slotCursor.get();
-        while (slotCursor < (totalKvCount * 2) / Constant.SLOT_SIZE) {
-            slotCursor = this.slotCursor.getAndAdd(1);
+        int slotCursor = this.slotCursor.getAndAdd(1);
+        while (slotCursor < (totalSlot << 1)) {
             int realCursor = slotCursor % Constant.SLOT_COUNT;
             CacheSlot cacheSlot = cachePool.getCacheSlots()[realCursor];
             loadToSlot(cacheSlot, slotCursor);
+            slotCursor = this.slotCursor.getAndAdd(1);
         }
     }
 
     private void loadToSlot(CacheSlot cacheSlot, int slotCursor) {
-        int startIndex = slotCursor * Constant.SLOT_SIZE % totalKvCount;
-        int endIndex = startIndex + Constant.SLOT_SIZE;
+        int loadCursor = slotCursor % totalSlot; //理论上第loadCursor个槽该加载的位置
+        int startIndex = loadCursor * Constant.SLOT_SIZE;
+        int tmpEnd = startIndex + Constant.SLOT_SIZE;
+        int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
         int generation = startIndex / Constant.CACHE_SIZE + 1;
         int slotStatus = generation | Integer.MIN_VALUE;
         for (;;) {
