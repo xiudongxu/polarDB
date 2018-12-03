@@ -49,7 +49,7 @@ public class CacheSlotThread extends Thread {
         int startIndex = loadCursor * Constant.SLOT_SIZE;
         int tmpEnd = startIndex + Constant.SLOT_SIZE;
         int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
-        int generation = loadCursor / Constant.SLOT_COUNT + 1;
+        int generation = slotCursor / Constant.SLOT_COUNT + 1;
         int slotStatus = generation | Integer.MIN_VALUE;
         byte[][] slotValues = cacheSlot.getSlotValues();
         for (;;) {

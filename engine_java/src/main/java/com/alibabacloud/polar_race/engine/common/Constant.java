@@ -33,9 +33,9 @@ public interface Constant {
 
     int CACHE_CAP = THREAD_COUNT * BLOCK_SIZE * MAPS_PER_BLOCK;*/
 
-    int SLOT_COUNT = 128;
+    int SLOT_COUNT = 64;
 
-    int SLOT_SIZE = 3000;
+    int SLOT_SIZE = 5000;
 
     int CACHE_SIZE = SLOT_COUNT * SLOT_SIZE;
 
