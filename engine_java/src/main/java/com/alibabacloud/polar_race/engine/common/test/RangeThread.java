@@ -25,7 +25,7 @@ public class RangeThread extends Thread {
     public void run() {
         try {
             byte[] lower = ByteUtil.long2Bytes(1);
-            byte[] upper = ByteUtil.long2Bytes(6400);
+            byte[] upper = ByteUtil.long2Bytes(640000);
             engineRace.range(lower, upper, visitor);
             engineRace.range(lower, upper, visitor);
             //System.out.println("range finish ................................");

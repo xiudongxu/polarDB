@@ -4,6 +4,7 @@ import com.alibabacloud.polar_race.engine.common.AbstractVisitor;
 import com.alibabacloud.polar_race.engine.common.ByteUtil;
 import com.alibabacloud.polar_race.engine.common.Constant;
 import com.alibabacloud.polar_race.engine.common.EngineRace;
+import com.alibabacloud.polar_race.engine.common.SmartSortIndex;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -21,7 +22,7 @@ public class Test {
         engineRace = new EngineRace();
         engineRace.open("/Users/wangshuo/polarDb/store");
 
-        //write();
+        write();
         readAndRange();
         engineRace.close();
     }
@@ -39,7 +40,7 @@ public class Test {
     }
 
     public static void readAndRange() {
-        /*CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT);
+        CountDownLatch downLatch = new CountDownLatch(Constant.THREAD_COUNT);
         for (int i = 1; i <= Constant.THREAD_COUNT; i++) {
             new ReadData(i, downLatch).start();
         }
@@ -47,7 +48,7 @@ public class Test {
             downLatch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }*/
+        }
 
         long begin = System.currentTimeMillis();
         System.out.println("start range data...................................");
@@ -60,6 +61,7 @@ public class Test {
             e.printStackTrace();
         }
 
+        System.out.println("total kv count : " + SmartSortIndex.instance.getTotalKvCount());
         System.out.println("range data cost time:" + (System.currentTimeMillis() - begin));
     }
 
@@ -95,8 +97,8 @@ public class Test {
         @Override
         public void run() {
             try {
-                long tmp = 1 + (this.threadNum - 1) * 100;
-                for (int i = 0; i < 100; i++) {
+                long tmp = 1 + (this.threadNum - 1) * 10000;
+                for (int i = 0; i < 10000; i++) {
                     byte[] key = ByteUtil.long2Bytes(tmp);
                     engineRace.write(key, makeValue(key));
                     tmp += 1;
@@ -121,8 +123,8 @@ public class Test {
         @Override
         public void run() {
             try {
-                long tmp = 1 + (this.threadNum - 1) * 100;
-                for (int i = 0; i < 100; i++) {
+                long tmp = 1 + (this.threadNum - 1) * 10000;
+                for (int i = 0; i < 10000; i++) {
                     byte[] key = ByteUtil.long2Bytes(tmp);
                     byte[] value = engineRace.read(key);
                     byte[] prefixValue = new byte[8];
