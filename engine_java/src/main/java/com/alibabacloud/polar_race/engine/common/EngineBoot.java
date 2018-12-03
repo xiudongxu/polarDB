@@ -60,6 +60,8 @@ public class EngineBoot {
     }
 
     public static void stopLoadCacheThread(ExecutorService executorService) {
-        executorService.shutdownNow();
+        if (executorService != null) {
+            executorService.shutdownNow();
+        }
     }
 }
