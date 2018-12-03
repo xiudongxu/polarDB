@@ -11,7 +11,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RingCachePool {
 
     private Data[] datas;
-    private int readCursor;
     private CacheSlot[] cacheSlots;
     private AtomicInteger slotCursor = new AtomicInteger(0);
 
@@ -20,35 +19,16 @@ public class RingCachePool {
         this.cacheSlots = new CacheSlot[Constant.SLOT_COUNT];
     }
 
-    public int getReadCursor() {
-        return readCursor;
-    }
-
-    public void setReadCursor(int readCursor) {
-        this.readCursor = readCursor;
-    }
-
     public Data[] getDatas() {
         return datas;
-    }
-
-    public void setDatas(Data[] datas) {
-        this.datas = datas;
-    }
-
-    public AtomicInteger getSlotCursor() {
-        return slotCursor;
-    }
-
-    public void setSlotCursor(AtomicInteger slotCursor) {
-        this.slotCursor = slotCursor;
     }
 
     public CacheSlot[] getCacheSlots() {
         return cacheSlots;
     }
 
-    public void setCacheSlots(CacheSlot[] cacheSlots) {
-        this.cacheSlots = cacheSlots;
+    public AtomicInteger getSlotCursor() {
+        return slotCursor;
     }
+
 }

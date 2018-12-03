@@ -4,7 +4,6 @@ import com.alibabacloud.polar_race.engine.common.cache.CacheSlot;
 import com.alibabacloud.polar_race.engine.common.cache.RingCachePool;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
-import com.carrotsearch.hppc.LongObjectHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -58,7 +57,6 @@ public class EngineRace extends AbstractEngine {
         if (!loaded) {
             synchronized (lock) {
                 if (!sorted) {
-                    EngineBoot.releaseMappedBuffer(datas);
                     EngineBoot.loadAndSortIndex(datas);
                     totalKvCount = SmartSortIndex.instance.getTotalKvCount();
                     sorted = true;
@@ -82,20 +80,20 @@ public class EngineRace extends AbstractEngine {
     }
 
     private void doRange(CacheSlot cacheSlot, int startIndex, AbstractVisitor visitor, int readCursor) {
-        int generation = startIndex / Constant.CACHE_SIZE + 1;
+        int generation = readCursor / Constant.SLOT_COUNT + 1;
         for (;;) {
             if (generation != cacheSlot.getSlotStatus()) {
+                rangeSleep(1);
                 continue;
             }
             int tmpEnd = startIndex + Constant.SLOT_SIZE;
             int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
-            for (int j = startIndex; j < endIndex; j++) {
-                LongObjectHashMap<byte[]> map = cacheSlot.getMap();
-                long keyL = SmartSortIndex.instance.get(j);
-                byte[] value = map.get(keyL);
-                visitor.visit(ByteUtil.long2Bytes(keyL), value);
+            byte[][] slotValues = cacheSlot.getSlotValues();
+            for (int i = startIndex, j = 0; i < endIndex; i++, j++) {
+                long keyL = SmartSortIndex.instance.get(i);
+                visitor.visit(ByteUtil.long2Bytes(keyL), slotValues[j]);
             }
-            cacheSlot.addReadCount(startIndex, endIndex, readCursor);
+            cacheSlot.addReadCount(endIndex, readCursor);
             break;
         }
     }
@@ -107,6 +105,14 @@ public class EngineRace extends AbstractEngine {
             EngineBoot.closeDataFile(datas);
         } catch (IOException e) {
             System.out.println("close file resource error");
+        }
+    }
+
+    private void rangeSleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 

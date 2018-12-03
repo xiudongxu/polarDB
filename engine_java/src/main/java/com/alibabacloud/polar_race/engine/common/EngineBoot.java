@@ -8,7 +8,6 @@ import com.alibabacloud.polar_race.engine.common.thread.LoadIndexThread;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import sun.nio.ch.DirectBuffer;
 
 /**
  * @author wangshuo
@@ -24,13 +23,6 @@ public class EngineBoot {
         }
         downLatch.await();
         return datas;
-    }
-
-    public static void releaseMappedBuffer(Data[] datas) {
-        for (int i = 0; i < datas.length; i++) {
-            DirectBuffer buffer = (DirectBuffer) datas[i].getKeyMapperByteBuffer();
-            buffer.cleaner().clean();
-        }
     }
 
     public static void loadAndSortIndex(Data[] datas) {
@@ -50,7 +42,7 @@ public class EngineBoot {
         RingCachePool cachePool = new RingCachePool(datas);
         CacheSlot[] cacheSlots = cachePool.getCacheSlots();
         for (int i = 0; i < Constant.SLOT_COUNT; i++) {
-            cacheSlots[i] = new CacheSlot(cachePool);
+            cacheSlots[i] = new CacheSlot();
         }
         return cachePool;
     }
