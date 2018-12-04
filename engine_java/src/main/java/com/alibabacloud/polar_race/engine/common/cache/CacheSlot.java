@@ -17,7 +17,7 @@ public class CacheSlot {
     private AtomicInteger readCount = new AtomicInteger(0);
 
     public CacheSlot() {
-        slotValues = new byte[Constant.SLOT_SIZE][Constant.KEY_SIZE];
+        slotValues = new byte[Constant.SLOT_SIZE][Constant.VALUE_SIZE];
         this.totalKvCount = SmartSortIndex.instance.getTotalKvCount();
     }
 
