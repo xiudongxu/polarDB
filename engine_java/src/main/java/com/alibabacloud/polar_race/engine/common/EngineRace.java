@@ -26,7 +26,8 @@ public class EngineRace extends AbstractEngine {
             file.mkdir();
         }
         try {
-            datas = EngineBoot.initDataFile(path);
+            executorService = Executors.newFixedThreadPool(Constant.THREAD_COUNT);
+            datas = EngineBoot.initDataFile(path, executorService);
         } catch (InterruptedException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR, "init data file IO exception!!!");
         }
@@ -57,7 +58,6 @@ public class EngineRace extends AbstractEngine {
         if (!loaded) {
             synchronized (lock) {
                 if (!sorted) {
-                    executorService = Executors.newFixedThreadPool(Constant.THREAD_COUNT);
                     EngineBoot.loadAndSortIndex(datas, executorService);
                     totalKvCount = SmartSortIndex.instance.getTotalKvCount();
                     sorted = true;

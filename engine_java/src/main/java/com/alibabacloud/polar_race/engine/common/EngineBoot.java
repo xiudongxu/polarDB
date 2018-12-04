@@ -15,17 +15,19 @@ import java.util.concurrent.ExecutorService;
  */
 public class EngineBoot {
 
-    public static Data[] initDataFile(String path) throws InterruptedException {
+    public static Data[] initDataFile(String path, ExecutorService executorService)
+            throws InterruptedException {
         Data[] datas = new Data[Constant.DATA_FILE_COUNT];
         CountDownLatch downLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
         for (int i = 0; i < Constant.DATA_FILE_COUNT; i++) {
-            new InitDataThread(i, path, datas, downLatch).start();
+            executorService.execute(new InitDataThread(i, path, datas, downLatch));
         }
         downLatch.await();
         return datas;
     }
 
     public static void loadAndSortIndex(Data[] datas, ExecutorService executorService) {
+    //public static void loadAndSortIndex(Data[] datas) {
         CountDownLatch countDownLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
         for (int i = 0; i < Constant.DATA_FILE_COUNT; i++) {
             executorService.execute(new LoadIndexThread(datas[i], countDownLatch));

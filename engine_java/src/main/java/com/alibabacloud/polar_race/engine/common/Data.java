@@ -9,6 +9,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import net.smacke.jaydio.DirectRandomAccessFile;
 import sun.misc.Contended;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
@@ -43,9 +44,9 @@ public class Data {
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
 
-
-    //private DirectRandomAccessFile accessFileChannel;
     private FileChannel accessFileChannel;
+    //private RandomAccessFile accessFileForRange;
+    private DirectRandomAccessFile accessFileForRange;
 
     public Data(String path, int fileNo) throws IOException {
         this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
@@ -73,8 +74,9 @@ public class Data {
         }
 
         valueFileChannel.position((long) subscript << 12);
+        //accessFileForRange = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
         accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r").getChannel();
-        //accessFileChannel = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+        accessFileForRange = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
         address = ((DirectBuffer) wirteBuffer).address();
     }
 
@@ -116,6 +118,26 @@ public class Data {
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
         }
+    }
+
+    public void readForRange(int offset, byte[] rangeValue) throws EngineException {
+        synchronized (this) {
+            try {
+                accessFileForRange.seek((long) (offset - 1) << 12);
+                accessFileForRange.read(rangeValue);
+            } catch (IOException e) {
+                throw new EngineException(RetCodeEnum.NOT_FOUND, "range read value IO exception!!!");
+            }
+        }
+
+        /*try {
+            synchronized (this) {
+                accessFileForRange.seek((long) (offset - 1) << 12);
+                accessFileForRange.read(rangeValue);
+            }
+        } catch (IOException e) {
+            throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
+        }*/
     }
 
     private void put(long key, int offset) {

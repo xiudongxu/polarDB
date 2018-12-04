@@ -25,5 +25,5 @@ public interface Constant {
 
     int SLOT_COUNT = 64;
 
-    int SLOT_SIZE = 50;
+    int SLOT_SIZE = 100;
 }

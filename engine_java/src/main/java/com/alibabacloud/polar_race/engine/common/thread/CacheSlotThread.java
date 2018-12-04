@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author wangshuo
  * @version 2018-11-29
  */
-public class CacheSlotThread implements Runnable {
+public class CacheSlotThread extends Thread {
 
     private Data[] datas;
     private int totalKvCount;
@@ -57,8 +57,7 @@ public class CacheSlotThread implements Runnable {
                 int modulus = (int) (keyL & (datas.length - 1));
                 Data data = datas[modulus];
                 try {
-                    byte[] bytes = data.readValue(data.get(keyL));
-                    slotValues[j] = bytes;
+                    data.readForRange(data.get(keyL), slotValues[j]);
                 } catch (EngineException e) {
                     System.out.println("during load to cache : read value IO exception!!!");
                 }
