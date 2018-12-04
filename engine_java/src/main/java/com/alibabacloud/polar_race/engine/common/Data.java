@@ -74,16 +74,16 @@ public class Data {
         }
 
         valueFileChannel.position((long) subscript << 12);
-        //accessFileForRange = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
         accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r").getChannel();
         accessFileForRange = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+        //accessFileForRange = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
         address = ((DirectBuffer) wirteBuffer).address();
     }
 
     public synchronized void storeKV(byte[] key, byte[] value) throws EngineException {
         int offset = appendValue(value);
         appendKey(key);
-        map.put(ByteUtil.bytes2Long(key), offset);
+        //map.put(ByteUtil.bytes2Long(key), offset);
     }
 
     private int appendValue(byte[] value) throws EngineException {

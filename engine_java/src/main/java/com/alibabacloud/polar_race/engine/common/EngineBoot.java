@@ -27,7 +27,6 @@ public class EngineBoot {
     }
 
     public static void loadAndSortIndex(Data[] datas, ExecutorService executorService) {
-    //public static void loadAndSortIndex(Data[] datas) {
         CountDownLatch countDownLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
         for (int i = 0; i < Constant.DATA_FILE_COUNT; i++) {
             executorService.execute(new LoadIndexThread(datas[i], countDownLatch));
