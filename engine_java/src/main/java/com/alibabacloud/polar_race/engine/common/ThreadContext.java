@@ -1,7 +1,5 @@
 package com.alibabacloud.polar_race.engine.common;
 
-import java.nio.ByteBuffer;
-
 /**
  * @author wangshuo
  * @version 2018-11-15
@@ -14,14 +12,6 @@ public class ThreadContext {
     public static byte[] getBytes(){
         return context.get();
     }*/
-
-
-    private static ThreadLocal<ByteBuffer> rangeValueBytes = ThreadLocal
-            .withInitial(() -> ByteBuffer.allocate(Constant.VALUE_SIZE));
-
-    public static ByteBuffer getRangeValueBytes() {
-        return rangeValueBytes.get();
-    }
 
     private static ThreadLocal<Integer> readCursor = ThreadLocal.withInitial(() -> 0);
 
