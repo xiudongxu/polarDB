@@ -57,13 +57,13 @@ public class EngineRace extends AbstractEngine {
         if (!loaded) {
             synchronized (lock) {
                 if (!sorted) {
-                    EngineBoot.loadAndSortIndex(datas);
+                    executorService = Executors.newFixedThreadPool(Constant.THREAD_COUNT);
+                    EngineBoot.loadAndSortIndex(datas, executorService);
                     totalKvCount = SmartSortIndex.instance.getTotalKvCount();
                     sorted = true;
                 }
                 if (!loaded) {
                     ringCachePool = EngineBoot.initRingCache(datas);
-                    executorService = Executors.newFixedThreadPool(Constant.THREAD_COUNT);
                     EngineBoot.loadToCachePool(ringCachePool, executorService);
                     loaded = true;
                 }
@@ -72,7 +72,7 @@ public class EngineRace extends AbstractEngine {
 
         int readSlotCursor = ThreadContext.getReadCursor();
         for (int i = 0; i < totalKvCount; i += Constant.SLOT_SIZE) {
-            int realCursor = readSlotCursor % Constant.SLOT_COUNT;
+            int realCursor = readSlotCursor & (Constant.SLOT_COUNT - 1);
             CacheSlot cacheSlot = ringCachePool.getCacheSlots()[realCursor];
             doRange(cacheSlot, i, visitor, readSlotCursor);
             readSlotCursor++;
@@ -80,7 +80,7 @@ public class EngineRace extends AbstractEngine {
     }
 
     private void doRange(CacheSlot cacheSlot, int startIndex, AbstractVisitor visitor, int readCursor) {
-        int generation = readCursor / Constant.SLOT_COUNT + 1;
+        int generation = (readCursor >> 6) + 1;
         for (;;) {
             if (generation != cacheSlot.getSlotStatus()) {
                 rangeSleep(1);

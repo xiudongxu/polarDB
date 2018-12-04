@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author wangshuo
  * @version 2018-11-29
  */
-public class CacheSlotThread extends Thread {
+public class CacheSlotThread implements Runnable {
 
     private Data[] datas;
     private int totalKvCount;
@@ -25,18 +25,14 @@ public class CacheSlotThread extends Thread {
         this.datas = cachePool.getDatas();
         this.slotCursor = cachePool.getSlotCursor();
         this.totalKvCount = SmartSortIndex.instance.getTotalKvCount();
-
-        // TODO: 2018/12/3 取模和除的地方都换成移位操作
-        int temp = totalKvCount / Constant.SLOT_SIZE;
-        this.needTotalSlot = totalKvCount % Constant.SLOT_SIZE == 0 ? temp : temp + 1;
+        this.needTotalSlot = SmartSortIndex.instance.getNeedSlotCount();
     }
 
     @Override
     public void run() {
         int slotCursor = this.slotCursor.getAndAdd(1);
-        // TODO: 2018/12/3 取模和除的地方都换成移位操作
         while (slotCursor < (needTotalSlot << 1)) {
-            int realCursor = slotCursor % Constant.SLOT_COUNT;
+            int realCursor = slotCursor & (Constant.SLOT_COUNT - 1);
             CacheSlot cacheSlot = cachePool.getCacheSlots()[realCursor];
             loadToSlot(cacheSlot, slotCursor);
             slotCursor = this.slotCursor.getAndAdd(1);
@@ -44,12 +40,11 @@ public class CacheSlotThread extends Thread {
     }
 
     private void loadToSlot(CacheSlot cacheSlot, int slotCursor) {
-        // TODO: 2018/12/3 取模和除的地方都换成移位操作
         int loadCursor = slotCursor % needTotalSlot; //理论上是第loadCursor个槽该加载的位置
         int startIndex = loadCursor * Constant.SLOT_SIZE;
         int tmpEnd = startIndex + Constant.SLOT_SIZE;
         int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
-        int generation = slotCursor / Constant.SLOT_COUNT + 1;
+        int generation = (slotCursor >> 6) + 1;
         int slotStatus = generation | Integer.MIN_VALUE;
         byte[][] slotValues = cacheSlot.getSlotValues();
         for (;;) {

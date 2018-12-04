@@ -23,21 +23,7 @@ public interface Constant {
 
     byte THREAD_COUNT = 64;
 
-    byte RANGE_THREAD_COUNT = THREAD_COUNT;
-
-    /*int BLOCK_SIZE = 500;
-
-    int MAPS_PER_BLOCK = 2;
-
-    int ONE_CACHE_SIZE = THREAD_COUNT * BLOCK_SIZE;
-
-    int CACHE_CAP = THREAD_COUNT * BLOCK_SIZE * MAPS_PER_BLOCK;*/
-
     int SLOT_COUNT = 64;
 
     int SLOT_SIZE = 50;
-
-    int CACHE_SIZE = SLOT_COUNT * SLOT_SIZE;
-
-    int TEST_THREAD_COUNT = 2;
 }

@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch;
  * @author wangshuo
  * @version 2018-11-25
  */
-public class LoadIndexThread extends Thread {
+public class LoadIndexThread implements Runnable {
 
     private Data data;
     private CountDownLatch downLatch;

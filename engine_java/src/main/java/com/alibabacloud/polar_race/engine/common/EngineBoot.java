@@ -25,10 +25,10 @@ public class EngineBoot {
         return datas;
     }
 
-    public static void loadAndSortIndex(Data[] datas) {
+    public static void loadAndSortIndex(Data[] datas, ExecutorService executorService) {
         CountDownLatch countDownLatch = new CountDownLatch(Constant.DATA_FILE_COUNT);
         for (int i = 0; i < Constant.DATA_FILE_COUNT; i++) {
-            new LoadIndexThread(datas[i], countDownLatch).start();
+            executorService.execute(new LoadIndexThread(datas[i], countDownLatch));
         }
         try {
             countDownLatch.await();

@@ -6,15 +6,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SmartSortIndex {
 
     private int limit;
-
-    private int plusNum = 0;
-
+    private int plusNum;
+    private int needSlotCount;
     public static SmartSortIndex instance = new SmartSortIndex();
-
     private long[] sortIndex = new long[Constant.TOTAL_KV_COUNT];
-
-    private AtomicInteger index = new AtomicInteger(0);
-
+    private AtomicInteger totalKvCount = new AtomicInteger(0);
     private AtomicInteger negativeCount = new AtomicInteger(0);
 
     private SmartSortIndex() {
@@ -22,10 +18,11 @@ public class SmartSortIndex {
     }
 
     public void sort() {
-        //Arrays.parallelSort(sortIndex);
         Arrays.sort(sortIndex);
         this.limit = negativeCount.get();
-        plusNum = index.get() - this.limit;
+        plusNum = totalKvCount.get() - this.limit;
+        int temp = totalKvCount.get() / Constant.SLOT_SIZE;
+        needSlotCount = totalKvCount.get() % Constant.SLOT_SIZE == 0 ? temp : temp + 1;
     }
 
     public int calcIndex(int index) {
@@ -33,7 +30,7 @@ public class SmartSortIndex {
     }
 
     public void set(long element) {
-        sortIndex[index.getAndIncrement()] = element;
+        sortIndex[totalKvCount.getAndIncrement()] = element;
     }
 
     public long get(int index) {
@@ -45,6 +42,10 @@ public class SmartSortIndex {
     }
 
     public int getTotalKvCount() {
-        return index.get();
+        return totalKvCount.get();
+    }
+
+    public int getNeedSlotCount() {
+        return needSlotCount;
     }
 }
