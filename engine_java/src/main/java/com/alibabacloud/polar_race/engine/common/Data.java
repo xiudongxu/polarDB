@@ -105,16 +105,16 @@ public class Data {
 
     public byte[] readValue(int offset) throws EngineException {
         try {
-//            byte[] bytes = ThreadContext.getBytes();
-//            synchronized (this) {
-//                accessFileChannel.seek((long) (offset - 1) << 12);
-//                accessFileChannel.read(bytes);
-//            }
-//            return bytes;
+            byte[] bytes = ThreadContext.getBytes();
+            synchronized (this) {
+                accessFileForRange.seek((long) (offset - 1) << 12);
+                accessFileForRange.read(bytes);
+            }
+            return bytes;
 
-            ByteBuffer buffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
+            /*ByteBuffer buffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
             accessFileChannel.read(buffer,(long) (offset - 1) << 12);
-            return buffer.array();
+            return buffer.array();*/
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
         }
