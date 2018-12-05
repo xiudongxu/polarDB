@@ -18,7 +18,7 @@ public class SmartSortIndex {
     }
 
     public void sort() {
-        Arrays.sort(sortIndex);
+        Arrays.parallelSort(sortIndex);
         this.limit = negativeCount.get();
         plusNum = totalKvCount.get() - this.limit;
         int temp = totalKvCount.get() / Constant.SLOT_SIZE;
