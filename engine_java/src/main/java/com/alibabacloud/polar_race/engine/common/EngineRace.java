@@ -8,10 +8,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import net.smacke.jaydio.buffer.AlignedDirectByteBuffer;
 
 public class EngineRace extends AbstractEngine {
 
     private Object lock = new Object();
+    private String path;
     private Data[] datas;
     private boolean loaded;
     private boolean sorted;
@@ -21,6 +23,7 @@ public class EngineRace extends AbstractEngine {
 
     @Override
     public void open(String path) throws EngineException {
+        this.path = path;
         File file = new File(path);
         if (!file.exists()) {
             file.mkdir();
@@ -63,7 +66,7 @@ public class EngineRace extends AbstractEngine {
                     sorted = true;
                 }
                 if (!loaded) {
-                    ringCachePool = EngineBoot.initRingCache(datas);
+                    ringCachePool = EngineBoot.initRingCache(datas, path);
                     EngineBoot.loadToCachePool(ringCachePool, executorService);
                     loaded = true;
                 }
@@ -88,10 +91,12 @@ public class EngineRace extends AbstractEngine {
             }
             int tmpEnd = startIndex + Constant.SLOT_SIZE;
             int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
-            byte[][] slotValues = cacheSlot.getSlotValues();
+            //byte[][] slotValues = cacheSlot.getSlotValues();
+            AlignedDirectByteBuffer slotValues = cacheSlot.getSlotValues();
             for (int i = startIndex, j = 0; i < endIndex; i++, j++) {
                 long keyL = SmartSortIndex.instance.get(i);
-                visitor.visit(ByteUtil.long2Bytes(keyL), slotValues[j]);
+                slotValues.get(ThreadContext.getBytes(), 0, Constant.VALUE_SIZE);
+                visitor.visit(ByteUtil.long2Bytes(keyL), ThreadContext.getBytes());
             }
             cacheSlot.addReadCount(endIndex, readCursor);
             break;

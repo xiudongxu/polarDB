@@ -39,11 +39,11 @@ public class EngineBoot {
         SmartSortIndex.instance.sort();
     }
 
-    public static RingCachePool initRingCache(Data[] datas) {
+    public static RingCachePool initRingCache(Data[] datas, String path) {
         RingCachePool cachePool = new RingCachePool(datas);
         CacheSlot[] cacheSlots = cachePool.getCacheSlots();
         for (int i = 0; i < Constant.SLOT_COUNT; i++) {
-            cacheSlots[i] = new CacheSlot();
+            cacheSlots[i] = new CacheSlot(path);
         }
         return cachePool;
     }

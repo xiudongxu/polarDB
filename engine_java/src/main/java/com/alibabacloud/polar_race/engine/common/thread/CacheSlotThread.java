@@ -7,6 +7,7 @@ import com.alibabacloud.polar_race.engine.common.cache.CacheSlot;
 import com.alibabacloud.polar_race.engine.common.cache.RingCachePool;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.smacke.jaydio.buffer.AlignedDirectByteBuffer;
 
 /**
  * @author wangshuo
@@ -46,7 +47,8 @@ public class CacheSlotThread extends Thread {
         int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
         int generation = (slotCursor >> 6) + 1;
         int slotStatus = generation | Integer.MIN_VALUE;
-        byte[][] slotValues = cacheSlot.getSlotValues();
+        //byte[][] slotValues = cacheSlot.getSlotValues();
+        AlignedDirectByteBuffer slotValues = cacheSlot.getSlotValues();
         for (;;) {
             if (slotStatus != cacheSlot.getSlotStatus() + 1) {
                 this.cacheSleep(1);
@@ -57,7 +59,8 @@ public class CacheSlotThread extends Thread {
                 int modulus = (int) (keyL & (datas.length - 1));
                 Data data = datas[modulus];
                 try {
-                    data.readForRange(data.get(keyL), slotValues[j]);
+                    //data.readForRange(data.get(keyL), slotValues[j]);
+                    data.readForRange(data.get(keyL), slotValues);
                 } catch (EngineException e) {
                     System.out.println("during load to cache : read value IO exception!!!");
                 }

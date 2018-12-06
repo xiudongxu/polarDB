@@ -9,7 +9,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import net.smacke.jaydio.DirectRandomAccessFile;
+import net.smacke.jaydio.DirectIoLib;
+import net.smacke.jaydio.buffer.AlignedDirectByteBuffer;
 import sun.misc.Contended;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
@@ -29,7 +30,6 @@ public class Data {
     @Contended("1")
     private ByteBuffer wirteBuffer = ByteBuffer.allocateDirect(Constant.VALUE_SIZE);
 
-
     private long address;
     private LongIntHashMap map; //key -> offset map
     private Unsafe unsafe = UnsafeUtil.getUnsafe();
@@ -44,9 +44,11 @@ public class Data {
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
 
-    private FileChannel accessFileChannel;
-    //private RandomAccessFile accessFileForRange;
-    private DirectRandomAccessFile accessFileForRange;
+    private RandomAccessFile accessFileForRange;
+    //private DirectRandomAccessFile accessFileForRange;
+
+    private int fd;
+    private DirectIoLib directIoLib;
 
     public Data(String path, int fileNo) throws IOException {
         this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
@@ -69,21 +71,21 @@ public class Data {
                 bytes[j] = keyMapperByteBuffer.get();
             }
             long aLong = ByteUtil.bytes2Long(bytes);
-            //SortIndex.instance.set(aLong);
             map.put(aLong, i);
         }
-
         valueFileChannel.position((long) subscript << 12);
-        accessFileChannel = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r").getChannel();
-        accessFileForRange = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
-        //accessFileForRange = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+
+        //accessFileForRange = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+        accessFileForRange = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+        directIoLib = DirectIoLib.getLibForPath(path);
+        fd = directIoLib.oDirectOpen(File.separator + "VALUE_" + fileNo, true);
+
         address = ((DirectBuffer) wirteBuffer).address();
     }
 
     public synchronized void storeKV(byte[] key, byte[] value) throws EngineException {
-        int offset = appendValue(value);
+        appendValue(value);
         appendKey(key);
-        //map.put(ByteUtil.bytes2Long(key), offset);
     }
 
     private int appendValue(byte[] value) throws EngineException {
@@ -111,33 +113,28 @@ public class Data {
                 accessFileForRange.read(bytes);
             }
             return bytes;
-
-            /*ByteBuffer buffer = ByteBuffer.allocate(Constant.VALUE_SIZE);
-            accessFileChannel.read(buffer,(long) (offset - 1) << 12);
-            return buffer.array();*/
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
         }
     }
 
     public void readForRange(int offset, byte[] rangeValue) throws EngineException {
-        synchronized (this) {
-            try {
-                accessFileForRange.seek((long) (offset - 1) << 12);
-                accessFileForRange.read(rangeValue);
-            } catch (IOException e) {
-                throw new EngineException(RetCodeEnum.NOT_FOUND, "range read value IO exception!!!");
-            }
-        }
-
-        /*try {
+        try {
             synchronized (this) {
                 accessFileForRange.seek((long) (offset - 1) << 12);
                 accessFileForRange.read(rangeValue);
             }
         } catch (IOException e) {
-            throw new EngineException(RetCodeEnum.NOT_FOUND, "read value IO exception!!!");
-        }*/
+            throw new EngineException(RetCodeEnum.NOT_FOUND, "range value IO exception!!!");
+        }
+    }
+
+    public void readForRange(int offset, AlignedDirectByteBuffer byteBuffer) throws EngineException {
+        try {
+            directIoLib.pread(fd, byteBuffer, (long) (offset - 1) << 12);
+        } catch (IOException e) {
+            throw new EngineException(RetCodeEnum.NOT_FOUND, "dio range value IO exception!!!");
+        }
     }
 
     private void put(long key, int offset) {
@@ -155,7 +152,6 @@ public class Data {
     public void close() throws IOException {
         valueMappedFile.close();
         keyMappedFile.close();
-        accessFileChannel.close();
     }
 
     public int getSubscript() {
