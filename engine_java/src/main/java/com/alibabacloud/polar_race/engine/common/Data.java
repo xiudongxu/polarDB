@@ -5,11 +5,11 @@ import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import com.carrotsearch.hppc.LongIntHashMap;
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import net.smacke.jaydio.DirectIoLib;
+import net.smacke.jaydio.DirectRandomAccessFile;
 import net.smacke.jaydio.buffer.AlignedDirectByteBuffer;
 import sun.misc.Contended;
 import sun.misc.Unsafe;
@@ -44,8 +44,8 @@ public class Data {
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
 
-    private RandomAccessFile accessFileForRange;
-    //private DirectRandomAccessFile accessFileForRange;
+    //private RandomAccessFile accessFileForRange;
+    private DirectRandomAccessFile accessFileForRange;
 
     private int fd;
     private DirectIoLib directIoLib;
@@ -75,8 +75,8 @@ public class Data {
         }
         valueFileChannel.position((long) subscript << 12);
 
-        //accessFileForRange = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
-        accessFileForRange = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+        accessFileForRange = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+        //accessFileForRange = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
         directIoLib = DirectIoLib.getLibForPath(path);
         fd = directIoLib.oDirectOpen(File.separator + "VALUE_" + fileNo, true);
 
