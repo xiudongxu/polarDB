@@ -78,7 +78,7 @@ public class Data {
         accessFileForRange = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
         //accessFileForRange = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
         directIoLib = DirectIoLib.getLibForPath(path);
-        fd = directIoLib.oDirectOpen(File.separator + "VALUE_" + fileNo, true);
+        fd = directIoLib.oDirectOpen(path + File.separator + "VALUE_" + fileNo, true);
 
         address = ((DirectBuffer) wirteBuffer).address();
     }
