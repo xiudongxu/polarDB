@@ -100,7 +100,6 @@ public class EngineRace extends AbstractEngine {
             for (int i = startIndex, j = 0; i < endIndex; i++, j++) {
                 long keyL = SmartSortIndex.instance.get(i);
                 //slotValues.get(ThreadContext.getBytes(), 0, Constant.VALUE_SIZE);
-                slotValues.flip();
                 slotValues.get(ThreadContext.getBytes());
                 visitor.visit(ByteUtil.long2Bytes(keyL), ThreadContext.getBytes());
             }
