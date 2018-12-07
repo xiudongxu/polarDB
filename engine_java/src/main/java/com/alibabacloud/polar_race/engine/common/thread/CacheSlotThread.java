@@ -6,8 +6,8 @@ import com.alibabacloud.polar_race.engine.common.SmartSortIndex;
 import com.alibabacloud.polar_race.engine.common.cache.CacheSlot;
 import com.alibabacloud.polar_race.engine.common.cache.RingCachePool;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.smacke.jaydio.buffer.AlignedDirectByteBuffer;
 
 /**
  * @author wangshuo
@@ -48,7 +48,8 @@ public class CacheSlotThread extends Thread {
         int generation = (slotCursor >> 6) + 1;
         int slotStatus = generation | Integer.MIN_VALUE;
         //byte[][] slotValues = cacheSlot.getSlotValues();
-        AlignedDirectByteBuffer slotValues = cacheSlot.getSlotValues();
+        //AlignedDirectByteBuffer slotValues = cacheSlot.getSlotValues();
+        ByteBuffer slotValues = cacheSlot.getSlotValues();
         for (;;) {
             if (slotStatus != cacheSlot.getSlotStatus() + 1) {
                 this.cacheSleep(1);

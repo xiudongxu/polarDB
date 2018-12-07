@@ -1,16 +1,15 @@
 package com.alibabacloud.polar_race.engine.common;
 
+import com.alibabacloud.polar_race.engine.common.bytebuf.DirectFileUtils;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import com.carrotsearch.hppc.LongIntHashMap;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import net.smacke.jaydio.DirectIoLib;
-import net.smacke.jaydio.DirectRandomAccessFile;
-import net.smacke.jaydio.buffer.AlignedDirectByteBuffer;
 import sun.misc.Contended;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
@@ -44,11 +43,10 @@ public class Data {
     private MappedFile keyMappedFile;
     private FileChannel keyFileChannel;
 
-    //private RandomAccessFile accessFileForRange;
-    private DirectRandomAccessFile accessFileForRange;
+    private RandomAccessFile accessFileForRange;
+    //private DirectRandomAccessFile accessFileForRange;
 
     private int fd;
-    private DirectIoLib directIoLib;
 
     public Data(String path, int fileNo) throws IOException {
         this.map = new LongIntHashMap(Constant.INIT_MAP_CAP, 0.99);
@@ -75,10 +73,9 @@ public class Data {
         }
         valueFileChannel.position((long) subscript << 12);
 
-        accessFileForRange = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
-        //accessFileForRange = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
-        directIoLib = DirectIoLib.getLibForPath(path);
-        fd = directIoLib.oDirectOpen(path + File.separator + "VALUE_" + fileNo, true);
+        //accessFileForRange = new DirectRandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+        accessFileForRange = new RandomAccessFile(path + File.separator + "VALUE_" + fileNo, "r");
+        fd = DirectFileUtils.openReadOnly(path + File.separator + "VALUE_" + fileNo);
 
         address = ((DirectBuffer) wirteBuffer).address();
     }
@@ -129,9 +126,10 @@ public class Data {
         }
     }
 
-    public void readForRange(int offset, AlignedDirectByteBuffer byteBuffer) throws EngineException {
+    public void readForRange(int offset, ByteBuffer byteBuffer) throws EngineException {
         try {
-            directIoLib.pread(fd, byteBuffer, (long) (offset - 1) << 12);
+            DirectFileUtils.pread(fd, byteBuffer, (long) (offset - 1) << 12);
+            //directIoLib.pread(fd, byteBuffer, (long) (offset - 1) << 12);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "dio range value IO exception!!!");
         }

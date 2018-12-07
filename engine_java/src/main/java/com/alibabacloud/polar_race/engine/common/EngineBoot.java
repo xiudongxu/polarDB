@@ -6,6 +6,7 @@ import com.alibabacloud.polar_race.engine.common.thread.CacheSlotThread;
 import com.alibabacloud.polar_race.engine.common.thread.InitDataThread;
 import com.alibabacloud.polar_race.engine.common.thread.LoadIndexThread;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 
@@ -39,11 +40,13 @@ public class EngineBoot {
         SmartSortIndex.instance.sort();
     }
 
-    public static RingCachePool initRingCache(Data[] datas, String path) {
+    public static RingCachePool initRingCache(Data[] datas, ByteBuffer buffer) {
         RingCachePool cachePool = new RingCachePool(datas);
         CacheSlot[] cacheSlots = cachePool.getCacheSlots();
         for (int i = 0; i < Constant.SLOT_COUNT; i++) {
-            cacheSlots[i] = new CacheSlot(path);
+            buffer.position(i * Constant.VALUE_SIZE);
+            buffer.limit((i + 1) * Constant.VALUE_SIZE);
+            cacheSlots[i] = new CacheSlot(buffer.slice());
         }
         return cachePool;
     }

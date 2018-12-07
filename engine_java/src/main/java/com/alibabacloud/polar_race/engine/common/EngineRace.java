@@ -1,34 +1,36 @@
 package com.alibabacloud.polar_race.engine.common;
 
+import com.alibabacloud.polar_race.engine.common.bytebuf.DirectBufFactory;
+import com.alibabacloud.polar_race.engine.common.bytebuf.DirectFileUtils;
 import com.alibabacloud.polar_race.engine.common.cache.CacheSlot;
 import com.alibabacloud.polar_race.engine.common.cache.RingCachePool;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import net.smacke.jaydio.buffer.AlignedDirectByteBuffer;
 
 public class EngineRace extends AbstractEngine {
 
     private Object lock = new Object();
-    private String path;
     private Data[] datas;
     private boolean loaded;
     private boolean sorted;
     private int totalKvCount;
+    private ByteBuffer directBuf;
     private RingCachePool ringCachePool;
     private ExecutorService executorService;
 
     @Override
     public void open(String path) throws EngineException {
-        this.path = path;
         File file = new File(path);
         if (!file.exists()) {
             file.mkdir();
         }
         try {
+            DirectFileUtils.initBlockSize(path);
             executorService = Executors.newFixedThreadPool(Constant.THREAD_COUNT);
             datas = EngineBoot.initDataFile(path, executorService);
         } catch (InterruptedException e) {
@@ -66,7 +68,9 @@ public class EngineRace extends AbstractEngine {
                     sorted = true;
                 }
                 if (!loaded) {
-                    ringCachePool = EngineBoot.initRingCache(datas, path);
+                    //directBuf = ByteBuffer.allocateDirect(Constant.SLOT_COUNT * Constant.VALUE_SIZE);
+                    directBuf = DirectBufFactory.allocateAlign(Constant.SLOT_COUNT * Constant.VALUE_SIZE);
+                    ringCachePool = EngineBoot.initRingCache(datas, directBuf);
                     EngineBoot.loadToCachePool(ringCachePool, executorService);
                     loaded = true;
                 }
@@ -92,10 +96,12 @@ public class EngineRace extends AbstractEngine {
             int tmpEnd = startIndex + Constant.SLOT_SIZE;
             int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
             //byte[][] slotValues = cacheSlot.getSlotValues();
-            AlignedDirectByteBuffer slotValues = cacheSlot.getSlotValues();
+            ByteBuffer slotValues = cacheSlot.getSlotValues();
             for (int i = startIndex, j = 0; i < endIndex; i++, j++) {
                 long keyL = SmartSortIndex.instance.get(i);
-                slotValues.get(ThreadContext.getBytes(), 0, Constant.VALUE_SIZE);
+                //slotValues.get(ThreadContext.getBytes(), 0, Constant.VALUE_SIZE);
+                slotValues.flip();
+                slotValues.get(ThreadContext.getBytes());
                 visitor.visit(ByteUtil.long2Bytes(keyL), ThreadContext.getBytes());
             }
             cacheSlot.addReadCount(endIndex, readCursor);
