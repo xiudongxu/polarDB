@@ -101,6 +101,7 @@ public class EngineRace extends AbstractEngine {
                 long keyL = SmartSortIndex.instance.get(i);
                 //slotValues.get(ThreadContext.getBytes(), 0, Constant.VALUE_SIZE);
                 slotValues.get(ThreadContext.getBytes());
+                slotValues.flip(); //TODO:线程安全问题
                 visitor.visit(ByteUtil.long2Bytes(keyL), ThreadContext.getBytes());
             }
             cacheSlot.addReadCount(endIndex, readCursor);
