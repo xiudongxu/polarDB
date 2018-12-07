@@ -1,7 +1,6 @@
 package com.alibabacloud.polar_race.engine.common;
 
 import com.alibabacloud.polar_race.engine.common.bytebuf.DirectFileUtils;
-import com.alibabacloud.polar_race.engine.common.cache.CacheSlot;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
 import com.alibabacloud.polar_race.engine.common.exceptions.RetCodeEnum;
 import com.carrotsearch.hppc.LongIntHashMap;
@@ -127,11 +126,9 @@ public class Data {
         }
     }
 
-    public void readForRange(int offset, CacheSlot cacheSlot) throws EngineException {
+    public void readForRange(int offset, ByteBuffer byteBuffer) throws EngineException {
         try {
-            ByteBuffer slotValues = cacheSlot.getSlotValues();
-            DirectFileUtils.pread(fd, slotValues, (long) (offset - 1) << 12);
-            slotValues.get(cacheSlot.getSlotBytes());
+            DirectFileUtils.pread(fd, byteBuffer, (long) (offset - 1) << 12);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.NOT_FOUND, "dio range value IO exception!!!");
         }

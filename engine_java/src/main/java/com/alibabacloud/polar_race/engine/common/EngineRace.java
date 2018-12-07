@@ -67,7 +67,7 @@ public class EngineRace extends AbstractEngine {
                     sorted = true;
                 }
                 if (!loaded) {
-                    ByteBuffer directBuf = DirectBufFactory.allocateAlign(Constant.SLOT_COUNT * Constant.VALUE_SIZE);
+                    ByteBuffer directBuf = DirectBufFactory.allocateAlign(Constant.BYTE_BUF_CAP);
                     ringCachePool = EngineBoot.initRingCache(datas, directBuf);
                     EngineBoot.loadToCachePool(ringCachePool, executorService);
                     loaded = true;
@@ -85,7 +85,7 @@ public class EngineRace extends AbstractEngine {
     }
 
     private void doRange(CacheSlot cacheSlot, int startIndex, AbstractVisitor visitor, int readCursor) {
-        int generation = (readCursor >> 6) + 1;
+        int generation = (readCursor / Constant.SLOT_COUNT) + 1;
         for (;;) {
             if (generation != cacheSlot.getSlotStatus()) {
                 rangeSleep(1);
@@ -93,10 +93,11 @@ public class EngineRace extends AbstractEngine {
             }
             int tmpEnd = startIndex + Constant.SLOT_SIZE;
             int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
-            ByteBuffer slotValues = cacheSlot.getSlotValues();
+            ByteBuffer slotValues = cacheSlot.getSlotValues().slice();
             for (int i = startIndex, j = 0; i < endIndex; i++, j++) {
                 long keyL = SmartSortIndex.instance.get(i);
-                visitor.visit(ByteUtil.long2Bytes(keyL), cacheSlot.getSlotBytes());
+                slotValues.get(ThreadContext.getBytes());
+                visitor.visit(ByteUtil.long2Bytes(keyL), ThreadContext.getBytes());
             }
             cacheSlot.addReadCount(endIndex, readCursor);
             break;

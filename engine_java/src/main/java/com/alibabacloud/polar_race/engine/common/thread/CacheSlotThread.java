@@ -6,6 +6,7 @@ import com.alibabacloud.polar_race.engine.common.SmartSortIndex;
 import com.alibabacloud.polar_race.engine.common.cache.CacheSlot;
 import com.alibabacloud.polar_race.engine.common.cache.RingCachePool;
 import com.alibabacloud.polar_race.engine.common.exceptions.EngineException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -44,23 +45,27 @@ public class CacheSlotThread extends Thread {
         int startIndex = loadCursor * Constant.SLOT_SIZE;
         int tmpEnd = startIndex + Constant.SLOT_SIZE;
         int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
-        int generation = (slotCursor >> 6) + 1;
+        int generation = (slotCursor / Constant.SLOT_COUNT) + 1;
         int slotStatus = generation | Integer.MIN_VALUE;
         for (;;) {
             if (slotStatus != cacheSlot.getSlotStatus() + 1) {
                 this.cacheSleep(1);
                 continue;
             }
+            ByteBuffer slotValues = cacheSlot.getSlotValues();
             for (int i = startIndex, j = 0; i < endIndex; i++, j++) {
                 long keyL = SmartSortIndex.instance.get(i);
                 int modulus = (int) (keyL & (datas.length - 1));
                 Data data = datas[modulus];
                 try {
-                    data.readForRange(data.get(keyL), cacheSlot);
+                    slotValues.position(j * Constant.VALUE_SIZE);
+                    slotValues.limit((j + 1) * Constant.VALUE_SIZE);
+                    data.readForRange(data.get(keyL), slotValues.slice());
                 } catch (EngineException e) {
                     System.out.println("during load to cache : read value IO exception!!!");
                 }
             }
+            slotValues.position(0);
             cacheSlot.setFullStatus(generation);
             break;
         }

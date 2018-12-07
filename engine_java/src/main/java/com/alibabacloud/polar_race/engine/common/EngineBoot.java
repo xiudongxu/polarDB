@@ -44,8 +44,8 @@ public class EngineBoot {
         RingCachePool cachePool = new RingCachePool(datas);
         CacheSlot[] cacheSlots = cachePool.getCacheSlots();
         for (int i = 0; i < Constant.SLOT_COUNT; i++) {
-            buffer.position(i * Constant.VALUE_SIZE);
-            buffer.limit((i + 1) * Constant.VALUE_SIZE);
+            buffer.position(i * Constant.SLOT_BUF_CAP);
+            buffer.limit((i + 1) * Constant.SLOT_BUF_CAP);
             cacheSlots[i] = new CacheSlot(buffer.slice());
         }
         return cachePool;
