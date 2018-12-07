@@ -23,7 +23,7 @@ public interface Constant {
 
     byte THREAD_COUNT = 64;
 
-    int SLOT_COUNT = 64;
+    int SLOT_COUNT = 25600;
 
     int SLOT_SIZE = 1;
 }
