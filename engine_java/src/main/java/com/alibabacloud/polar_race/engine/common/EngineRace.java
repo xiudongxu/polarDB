@@ -19,7 +19,6 @@ public class EngineRace extends AbstractEngine {
     private boolean loaded;
     private boolean sorted;
     private int totalKvCount;
-    private ByteBuffer directBuf;
     private RingCachePool ringCachePool;
     private ExecutorService executorService;
 
@@ -68,8 +67,7 @@ public class EngineRace extends AbstractEngine {
                     sorted = true;
                 }
                 if (!loaded) {
-                    //directBuf = ByteBuffer.allocateDirect(Constant.SLOT_COUNT * Constant.VALUE_SIZE);
-                    directBuf = DirectBufFactory.allocateAlign(Constant.SLOT_COUNT * Constant.VALUE_SIZE);
+                    ByteBuffer directBuf = DirectBufFactory.allocateAlign(Constant.SLOT_COUNT * Constant.VALUE_SIZE);
                     ringCachePool = EngineBoot.initRingCache(datas, directBuf);
                     EngineBoot.loadToCachePool(ringCachePool, executorService);
                     loaded = true;
@@ -95,14 +93,10 @@ public class EngineRace extends AbstractEngine {
             }
             int tmpEnd = startIndex + Constant.SLOT_SIZE;
             int endIndex = tmpEnd > totalKvCount ? totalKvCount : tmpEnd;
-            //byte[][] slotValues = cacheSlot.getSlotValues();
             ByteBuffer slotValues = cacheSlot.getSlotValues();
             for (int i = startIndex, j = 0; i < endIndex; i++, j++) {
                 long keyL = SmartSortIndex.instance.get(i);
-                //slotValues.get(ThreadContext.getBytes(), 0, Constant.VALUE_SIZE);
-                slotValues.get(ThreadContext.getBytes());
-                slotValues.flip(); //TODO:线程安全问题
-                visitor.visit(ByteUtil.long2Bytes(keyL), ThreadContext.getBytes());
+                visitor.visit(ByteUtil.long2Bytes(keyL), cacheSlot.getSlotBytes());
             }
             cacheSlot.addReadCount(endIndex, readCursor);
             break;

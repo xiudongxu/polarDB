@@ -14,6 +14,7 @@ public class CacheSlot {
 
     private int totalKvCount;
     private ByteBuffer slotValues;
+    private byte[] slotBytes = new byte[Constant.VALUE_SIZE];
 
     private volatile int slotStatus = Integer.MIN_VALUE;
     private AtomicInteger readCount = new AtomicInteger(0);
@@ -43,5 +44,13 @@ public class CacheSlot {
 
     public ByteBuffer getSlotValues() {
         return slotValues;
+    }
+
+    public byte[] getSlotBytes() {
+        return slotBytes;
+    }
+
+    public void setSlotBytes(byte[] slotBytes) {
+        this.slotBytes = slotBytes;
     }
 }
