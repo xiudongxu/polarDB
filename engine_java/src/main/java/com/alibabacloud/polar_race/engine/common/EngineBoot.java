@@ -57,6 +57,10 @@ public class EngineBoot {
         }
     }
 
+    public static void cleanMappedBuf() {
+
+    }
+
     public static void closeDataFile(Data[] datas) throws IOException {
         for (Data data : datas) {
             data.close();

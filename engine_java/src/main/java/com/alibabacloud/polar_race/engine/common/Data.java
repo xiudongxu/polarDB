@@ -90,7 +90,7 @@ public class Data {
             wirteBuffer.clear();
             unsafe.copyMemory(value, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, address, Constant.VALUE_SIZE);
             long position = valueFileChannel.position();
-            valueFileChannel.write(wirteBuffer);
+            valueFileChannel.write(wirteBuffer);  //value 写入的时候应该用dio，当时总是没有成功，api调用有问题
             return (int) ((position >> 12) + 1);
         } catch (IOException e) {
             throw new EngineException(RetCodeEnum.IO_ERROR,
